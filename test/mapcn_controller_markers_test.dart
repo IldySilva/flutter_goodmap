@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:mapcn_flutter/src/markers/marker.dart';
 import 'package:mapcn_flutter/src/mapcn_controller.dart';
 import 'package:mocktail/mocktail.dart';
 import 'helpers/mock_native_controller.dart';
