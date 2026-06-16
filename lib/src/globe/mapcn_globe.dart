@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
 import 'sphere_projection.dart';
@@ -9,8 +10,8 @@ import 'sphere_shader_painter.dart';
 import 'tile_atlas.dart';
 
 /// A theme-aware native 3D globe, rendered with a `ui.FragmentProgram` sphere
-/// shader (no flutter_gpu). Drag to rotate, pinch to zoom. The basemap follows
-/// the host `Theme`'s brightness (CARTO light/dark raster tiles).
+/// shader (no flutter_gpu). Drag to rotate (with inertia), pinch to zoom. The
+/// basemap follows the host `Theme`'s brightness (CARTO light/dark raster tiles).
 class MapcnGlobe extends StatefulWidget {
   const MapcnGlobe({
     required this.initialCenter,
@@ -24,20 +25,21 @@ class MapcnGlobe extends StatefulWidget {
   final LatLng initialCenter;
   final double initialZoom;
 
-  /// Called whenever the camera centre changes (drag/zoom).
+  /// Called whenever the camera centre changes (drag/zoom/inertia).
   final void Function(LatLng center)? onCameraChanged;
 
   /// Called with the geographic coordinate under a tap, or null off-globe.
   final void Function(LatLng? coordinate)? onTap;
 
-  /// When false (tests), the GPU shader/atlas are skipped.
+  /// When false (tests), GPU shader/atlas and the inertia ticker are skipped.
   final bool renderEnabled;
 
   @override
   State<MapcnGlobe> createState() => _MapcnGlobeState();
 }
 
-class _MapcnGlobeState extends State<MapcnGlobe> {
+class _MapcnGlobeState extends State<MapcnGlobe>
+    with SingleTickerProviderStateMixin {
   final SphereShaderManager _shaderManager = SphereShaderManager();
 
   double _rotationX = 0; // latitude facing viewer (radians)
@@ -53,7 +55,16 @@ class _MapcnGlobeState extends State<MapcnGlobe> {
   Offset _lastFocal = Offset.zero;
   Size _lastSize = Size.zero;
 
+  // Inertia: angular velocity in radians/second, decayed by a Ticker.
+  late final Ticker _ticker = createTicker(_onTick);
+  double _angVelX = 0;
+  double _angVelZ = 0;
+  double? _lastTickSeconds;
+
   static const double _maxLatRad = 85 * math.pi / 180;
+  static const double _frictionTau = 0.4; // larger = longer glide
+
+  double _sensitivity() => 0.005 / math.pow(2.0, _zoom - 1.0);
 
   @override
   void initState() {
@@ -97,7 +108,10 @@ class _MapcnGlobeState extends State<MapcnGlobe> {
     if (mounted) setState(() {});
   }
 
+  // --- Gestures + inertia --------------------------------------------------
+
   void _onScaleStart(ScaleStartDetails d) {
+    _stopInertia();
     _baseZoom = _zoom;
     _lastFocal = d.localFocalPoint;
   }
@@ -105,17 +119,52 @@ class _MapcnGlobeState extends State<MapcnGlobe> {
   void _onScaleUpdate(ScaleUpdateDetails d) {
     final delta = d.localFocalPoint - _lastFocal;
     _lastFocal = d.localFocalPoint;
-    // Slower, more precise rotation as you zoom in.
-    final sensitivity = 0.005 / math.pow(2.0, _zoom - 1.0);
+    final s = _sensitivity();
     setState(() {
-      _rotationZ -= delta.dx * sensitivity;
-      _rotationX =
-          (_rotationX + delta.dy * sensitivity).clamp(-_maxLatRad, _maxLatRad);
+      _rotationZ -= delta.dx * s;
+      _rotationX = (_rotationX + delta.dy * s).clamp(-_maxLatRad, _maxLatRad);
       if (d.scale != 1.0) {
         _zoom = (_baseZoom + math.log(d.scale) / math.ln2).clamp(0.0, 6.0);
       }
     });
     widget.onCameraChanged?.call(_center);
+  }
+
+  void _onScaleEnd(ScaleEndDetails d) {
+    if (!widget.renderEnabled) return; // no ticker in tests
+    final v = d.velocity.pixelsPerSecond;
+    final s = _sensitivity();
+    _angVelZ = v.dx * s;
+    _angVelX = v.dy * s;
+    if (_angVelX.abs() > 0.05 || _angVelZ.abs() > 0.05) {
+      _lastTickSeconds = null;
+      if (!_ticker.isActive) _ticker.start();
+    }
+  }
+
+  void _onTick(Duration elapsed) {
+    final now = elapsed.inMicroseconds / 1e6;
+    final dt = _lastTickSeconds == null ? 0.016 : now - _lastTickSeconds!;
+    _lastTickSeconds = now;
+    if (dt <= 0) return;
+
+    _rotationZ -= _angVelZ * dt;
+    _rotationX = (_rotationX + _angVelX * dt).clamp(-_maxLatRad, _maxLatRad);
+
+    final decay = math.exp(-dt / _frictionTau);
+    _angVelZ *= decay;
+    _angVelX *= decay;
+
+    setState(() {});
+    widget.onCameraChanged?.call(_center);
+
+    if (_angVelX.abs() < 0.01 && _angVelZ.abs() < 0.01) _stopInertia();
+  }
+
+  void _stopInertia() {
+    _angVelX = 0;
+    _angVelZ = 0;
+    if (_ticker.isActive) _ticker.stop();
   }
 
   void _onTapUp(TapUpDetails d) {
@@ -138,6 +187,7 @@ class _MapcnGlobeState extends State<MapcnGlobe> {
 
   @override
   void dispose() {
+    _ticker.dispose();
     _atlasBuilder?.dispose();
     _atlas?.dispose();
     _shader?.dispose();
@@ -149,13 +199,13 @@ class _MapcnGlobeState extends State<MapcnGlobe> {
     return GestureDetector(
       onScaleStart: _onScaleStart,
       onScaleUpdate: _onScaleUpdate,
+      onScaleEnd: _onScaleEnd,
       onTapUp: _onTapUp,
       child: LayoutBuilder(
         builder: (context, constraints) {
           _lastSize = Size(constraints.maxWidth, constraints.maxHeight);
           final shader = _shader;
           if (!widget.renderEnabled || shader == null) {
-            // Loading / test placeholder.
             return Container(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: const SizedBox.expand(),

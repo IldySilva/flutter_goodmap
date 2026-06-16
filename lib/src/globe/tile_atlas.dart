@@ -45,7 +45,13 @@ class TileAtlas {
     ]);
     if (_disposed || !anyTile) return null;
 
-    final atlas = _reproject(mosaic, mosaicSize);
+    // The ~500k-pixel reprojection runs in a background isolate so it never
+    // blocks a frame on the UI thread.
+    final atlas = await compute(
+      _reprojectToEquirect,
+      _ReprojectArgs(mosaic, mosaicSize, width, height),
+    );
+    if (_disposed) return null;
     return _decode(atlas, width, height);
   }
 
@@ -81,27 +87,6 @@ class TileAtlas {
     }
   }
 
-  // Inverse-sample the mercator mosaic into an equirectangular atlas.
-  Uint8List _reproject(Uint8List mosaic, int mosaicSize) {
-    final out = Uint8List(width * height * 4);
-    for (var ay = 0; ay < height; ay++) {
-      final lat = 90.0 - 180.0 * (ay + 0.5) / height;
-      for (var ax = 0; ax < width; ax++) {
-        final lng = -180.0 + 360.0 * (ax + 0.5) / width;
-        final mc = latLngToMercator(LatLng(lat, lng));
-        final sx = (mc.x * mosaicSize).floor().clamp(0, mosaicSize - 1);
-        final sy = (mc.y * mosaicSize).floor().clamp(0, mosaicSize - 1);
-        final src = (sy * mosaicSize + sx) * 4;
-        final dst = (ay * width + ax) * 4;
-        out[dst] = mosaic[src];
-        out[dst + 1] = mosaic[src + 1];
-        out[dst + 2] = mosaic[src + 2];
-        out[dst + 3] = 255;
-      }
-    }
-    return out;
-  }
-
   Future<ui.Image> _decode(Uint8List rgba, int w, int h) {
     final completer = Completer<ui.Image>();
     ui.decodeImageFromPixels(rgba, w, h, ui.PixelFormat.rgba8888, completer.complete);
@@ -112,4 +97,39 @@ class TileAtlas {
     _disposed = true;
     _client.close(force: true);
   }
+}
+
+/// Payload for the isolate reprojection (must be sendable across isolates).
+class _ReprojectArgs {
+  const _ReprojectArgs(this.mosaic, this.mosaicSize, this.width, this.height);
+  final Uint8List mosaic;
+  final int mosaicSize;
+  final int width;
+  final int height;
+}
+
+/// Inverse-samples the Mercator [args.mosaic] into an equirectangular RGBA
+/// buffer. Runs in a background isolate via `compute`.
+Uint8List _reprojectToEquirect(_ReprojectArgs args) {
+  final mosaic = args.mosaic;
+  final mosaicSize = args.mosaicSize;
+  final width = args.width;
+  final height = args.height;
+  final out = Uint8List(width * height * 4);
+  for (var ay = 0; ay < height; ay++) {
+    final lat = 90.0 - 180.0 * (ay + 0.5) / height;
+    for (var ax = 0; ax < width; ax++) {
+      final lng = -180.0 + 360.0 * (ax + 0.5) / width;
+      final mc = latLngToMercator(LatLng(lat, lng));
+      final sx = (mc.x * mosaicSize).floor().clamp(0, mosaicSize - 1);
+      final sy = (mc.y * mosaicSize).floor().clamp(0, mosaicSize - 1);
+      final src = (sy * mosaicSize + sx) * 4;
+      final dst = (ay * width + ax) * 4;
+      out[dst] = mosaic[src];
+      out[dst + 1] = mosaic[src + 1];
+      out[dst + 2] = mosaic[src + 2];
+      out[dst + 3] = 255;
+    }
+  }
+  return out;
 }
