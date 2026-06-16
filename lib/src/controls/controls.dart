@@ -2,20 +2,20 @@
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
-import '../theme/mapcn_theme.dart';
+import '../theme/good_map_theme.dart';
 
 /// Declares which on-map controls are shown. Fullscreen and locate are out of
 /// scope for v1 (see design spec).
 @immutable
-class MapcnControls {
-  const MapcnControls({this.zoom = true, this.compass = true});
+class GoodControls {
+  const GoodControls({this.zoom = true, this.compass = true});
   final bool zoom;
   final bool compass;
 }
 
 /// Renders the configured controls and wires them to the native controller.
-class MapcnControlsView extends StatelessWidget {
-  const MapcnControlsView({
+class GoodControlsView extends StatelessWidget {
+  const GoodControlsView({
     required this.native,
     required this.config,
     required this.theme,
@@ -23,8 +23,8 @@ class MapcnControlsView extends StatelessWidget {
   });
 
   final MapLibreMapController native;
-  final MapcnControls config;
-  final MapcnTheme theme;
+  final GoodControls config;
+  final GoodMapTheme theme;
 
   @override
   Widget build(BuildContext context) {

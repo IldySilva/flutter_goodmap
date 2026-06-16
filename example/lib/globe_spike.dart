@@ -1,11 +1,11 @@
-// MapcnGlobe demo.
+// GoodGlobe demo.
 // Run with:  flutter run -t lib/globe_spike.dart
 //
 // A minimalist, theme-aware 3D globe (CARTO dark/light basemap) with inertial
 // drag-rotate, pinch-zoom, city points + labels, and dashed great-circle arcs.
 
 import 'package:flutter/material.dart';
-import 'package:mapcn_flutter/mapcn.dart';
+import 'package:goodmap/goodmap.dart';
 
 void main() => runApp(const GlobeSpikeApp());
 
@@ -63,7 +63,7 @@ class _GlobeSpikeAppState extends State<GlobeSpikeApp> {
       ),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('mapcn globe'),
+          title: const Text('goodmap'),
           actions: [
             IconButton(
               tooltip: 'Toggle light/dark',
@@ -81,7 +81,7 @@ class _GlobeSpikeAppState extends State<GlobeSpikeApp> {
         body: Stack(
           children: [
             Positioned.fill(
-              child: MapcnGlobe(
+              child: GoodGlobe(
                 initialCenter: _luanda,
                 initialZoom: 1.0,
                 points: _points,

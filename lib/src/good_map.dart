@@ -1,17 +1,17 @@
-// lib/src/mapcn_map.dart
+// lib/src/good_map.dart
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'controls/controls.dart';
-import 'mapcn_controller.dart';
+import 'good_map_controller.dart';
 import 'popups/popup_layer.dart';
 import 'theme/basemaps.dart';
-import 'theme/mapcn_theme.dart';
+import 'theme/good_map_theme.dart';
 
-export 'controls/controls.dart' show MapcnControls;
+export 'controls/controls.dart' show GoodControls;
 
 /// Test seam: builds the native map view. Production uses [_defaultMapBuilder].
-typedef MapcnMapBuilder = Widget Function({
+typedef GoodMapBuilder = Widget Function({
   required String styleString,
   required CameraPosition initialCameraPosition,
   required void Function(MapLibreMapController) onMapCreated,
@@ -20,12 +20,12 @@ typedef MapcnMapBuilder = Widget Function({
 });
 
 /// A theme-aware map with overlay markers/popups and zoom/compass controls.
-class MapcnMap extends StatefulWidget {
-  const MapcnMap({
+class GoodMap extends StatefulWidget {
+  const GoodMap({
     required this.initialCenter,
     required this.onMapReady,
     this.initialZoom = 11,
-    this.controls = const MapcnControls(),
+    this.controls = const GoodControls(),
     this.theme,
     @visibleForTesting this.mapBuilder = _defaultMapBuilder,
     super.key,
@@ -33,18 +33,18 @@ class MapcnMap extends StatefulWidget {
 
   final LatLng initialCenter;
   final double initialZoom;
-  final MapcnControls controls;
-  final MapcnTheme? theme;
-  final void Function(MapcnController) onMapReady;
-  final MapcnMapBuilder mapBuilder;
+  final GoodControls controls;
+  final GoodMapTheme? theme;
+  final void Function(GoodMapController) onMapReady;
+  final GoodMapBuilder mapBuilder;
 
   @override
-  State<MapcnMap> createState() => _MapcnMapState();
+  State<GoodMap> createState() => _GoodMapState();
 }
 
-class _MapcnMapState extends State<MapcnMap> {
+class _GoodMapState extends State<GoodMap> {
   MapLibreMapController? _native;
-  MapcnController? _controller;
+  GoodMapController? _controller;
   int _cameraVersion = 0;
   bool _readyCalled = false;
 
@@ -52,7 +52,7 @@ class _MapcnMapState extends State<MapcnMap> {
     if (_controller != null) return; // idempotent: ignore re-fires
     setState(() {
       _native = native;
-      _controller = MapcnController(native)..addListener(_onOverlayChanged);
+      _controller = GoodMapController(native)..addListener(_onOverlayChanged);
     });
   }
 
@@ -82,7 +82,7 @@ class _MapcnMapState extends State<MapcnMap> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final theme = widget.theme ?? MapcnTheme.fromColorScheme(scheme);
+    final theme = widget.theme ?? GoodMapTheme.fromColorScheme(scheme);
     final style = basemapStyleFor(Theme.of(context).brightness);
 
     return Stack(
@@ -99,13 +99,13 @@ class _MapcnMapState extends State<MapcnMap> {
           onCameraMove: _onCameraMove,
         ),
         if (_native != null && _controller != null)
-          MapcnOverlayLayer(
+          GoodOverlayLayer(
             native: _native!,
             entries: _controller!.overlayEntries,
             cameraVersion: _cameraVersion,
           ),
         if (_native != null)
-          MapcnControlsView(
+          GoodControlsView(
             native: _native!,
             config: widget.controls,
             theme: theme,

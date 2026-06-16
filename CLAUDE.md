@@ -18,15 +18,15 @@ Cool, beautiful, ready-to-use map components for Flutter — inspired by
 
 ## Two surfaces
 
-### 1. Flat map (`MapcnMap`)
+### 1. Flat map (`GoodMap`)
 A themed slippy map built on `maplibre_gl` (native MapLibre, iOS + Android).
 - Theme-aware CARTO basemaps (positron / dark-matter) selected by brightness.
-- `MapcnController`: camera (`flyTo`/`animateTo`/`fitBounds`/`moveTo`), markers
+- `GoodMapController`: camera (`flyTo`/`animateTo`/`fitBounds`/`moveTo`), markers
   (overlay widgets + asset GL symbols), popups, polylines.
 - Markers/popups are Flutter widgets projected over the native view via
   `toScreenLocation`; controls (zoom, compass) on top.
 
-### 2. Globe (`MapcnGlobe`)
+### 2. Globe (`GoodGlobe`)
 A native 3D globe with **no `flutter_gpu`** — an orthographic textured sphere
 rendered in a single `ui.FragmentProgram` (`shaders/sphere.frag`), drawn via
 `CustomPaint`. Works on iOS, Android, web and desktop.

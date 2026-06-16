@@ -13,8 +13,8 @@ import 'tile_atlas.dart';
 /// A theme-aware native 3D globe, rendered with a `ui.FragmentProgram` sphere
 /// shader (no flutter_gpu). Drag to rotate (with inertia), pinch to zoom. The
 /// basemap follows the host `Theme`'s brightness (CARTO light/dark raster tiles).
-class MapcnGlobe extends StatefulWidget {
-  const MapcnGlobe({
+class GoodGlobe extends StatefulWidget {
+  const GoodGlobe({
     required this.initialCenter,
     this.initialZoom = 1,
     this.points = const [],
@@ -57,10 +57,10 @@ class MapcnGlobe extends StatefulWidget {
   final bool renderEnabled;
 
   @override
-  State<MapcnGlobe> createState() => _MapcnGlobeState();
+  State<GoodGlobe> createState() => _GoodGlobeState();
 }
 
-class _MapcnGlobeState extends State<MapcnGlobe>
+class _GoodGlobeState extends State<GoodGlobe>
     with TickerProviderStateMixin {
   final SphereShaderManager _shaderManager = SphereShaderManager();
 

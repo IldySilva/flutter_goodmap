@@ -18,7 +18,7 @@ class SphereShaderManager {
     _loading = true;
     try {
       _program = await ui.FragmentProgram.fromAsset(
-        'packages/mapcn_flutter/shaders/sphere.frag',
+        'packages/goodmap/shaders/sphere.frag',
       );
       return true;
     } catch (e) {
@@ -27,7 +27,7 @@ class SphereShaderManager {
         _program = await ui.FragmentProgram.fromAsset('shaders/sphere.frag');
         return true;
       } catch (e2) {
-        debugPrint('MapcnGlobe: failed to load sphere shader: $e2');
+        debugPrint('GoodGlobe: failed to load sphere shader: $e2');
         return false;
       }
     } finally {

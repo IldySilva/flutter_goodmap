@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mapcn_flutter/mapcn.dart';
+import 'package:goodmap/goodmap.dart';
 
 /// A point of interest shown as an overlay marker with a tappable popup.
 class Poi {

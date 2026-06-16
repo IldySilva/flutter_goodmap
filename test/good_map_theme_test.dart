@@ -1,12 +1,12 @@
 // test/mapcn_theme_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mapcn_flutter/src/theme/mapcn_theme.dart';
+import 'package:goodmap/src/theme/good_map_theme.dart';
 
 void main() {
   test('fromColorScheme derives tokens from the scheme', () {
     final scheme = ColorScheme.fromSeed(seedColor: Colors.indigo);
-    final theme = MapcnTheme.fromColorScheme(scheme);
+    final theme = GoodMapTheme.fromColorScheme(scheme);
 
     expect(theme.markerColor, scheme.primary);
     expect(theme.popupBackground, scheme.surface);
@@ -17,7 +17,7 @@ void main() {
   });
 
   test('copyWith overrides only the given tokens', () {
-    final base = MapcnTheme.fromColorScheme(
+    final base = GoodMapTheme.fromColorScheme(
         ColorScheme.fromSeed(seedColor: Colors.indigo));
     final overridden = base.copyWith(markerColor: Colors.red);
 

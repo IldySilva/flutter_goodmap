@@ -3,14 +3,14 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:mapcn_flutter/src/mapcn_map.dart';
+import 'package:goodmap/src/good_map.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockMapLibreMapController extends Mock implements MapLibreMapController {}
 
 /// Builds a fake map: ignores rendering, immediately invokes onMapCreated and
 /// onStyleLoaded with [native], and reports the chosen style string.
-MapcnMapBuilder testMapBuilder(
+GoodMapBuilder testMapBuilder(
   MapLibreMapController native, {
   void Function(String style)? onStyle,
 }) {
@@ -35,7 +35,7 @@ class _FallbackSymbol extends Fake implements Symbol {}
 class _FallbackLine extends Fake implements Line {}
 
 /// Call once in setUpAll before stubbing methods that take these types.
-void registerMapcnFallbacks() {
+void registerGoodFallbacks() {
   registerFallbackValue(CameraUpdate.zoomIn());
   registerFallbackValue(const SymbolOptions());
   registerFallbackValue(const LatLng(0, 0));

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
-import 'package:mapcn_flutter/src/markers/marker.dart';
+import 'package:goodmap/src/markers/marker.dart';
 
 void main() {
   test('MarkerId equality is by value', () {

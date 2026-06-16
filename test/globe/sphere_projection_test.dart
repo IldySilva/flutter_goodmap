@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
-import 'package:mapcn_flutter/src/globe/sphere_projection.dart';
+import 'package:goodmap/src/globe/sphere_projection.dart';
 
 double _rad(double deg) => deg * math.pi / 180.0;
 

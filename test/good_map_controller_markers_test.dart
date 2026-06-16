@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:mapcn_flutter/src/mapcn_controller.dart';
+import 'package:goodmap/src/good_map_controller.dart';
 import 'package:mocktail/mocktail.dart';
 import 'helpers/mock_native_controller.dart';
 
@@ -13,10 +13,10 @@ class _FakeSymbol extends Fake implements Symbol {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(registerMapcnFallbacks);
+  setUpAll(registerGoodFallbacks);
 
   late MockMapLibreMapController native;
-  late MapcnController controller;
+  late GoodMapController controller;
 
   setUp(() {
     // Serve a fake asset so MarkerImage.asset() rootBundle.load(...) resolves.
@@ -28,7 +28,7 @@ void main() {
     when(() => native.addImage(any(), any())).thenAnswer((_) async {});
     when(() => native.addSymbol(any())).thenAnswer((_) async => _FakeSymbol());
     when(() => native.removeSymbol(any())).thenAnswer((_) async {});
-    controller = MapcnController(native);
+    controller = GoodMapController(native);
   });
 
   test('addMarker with child returns an id and exposes an overlay entry', () {

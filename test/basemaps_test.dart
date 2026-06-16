@@ -1,7 +1,7 @@
 // test/basemaps_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mapcn_flutter/src/theme/basemaps.dart';
+import 'package:goodmap/src/theme/basemaps.dart';
 
 void main() {
   test('light brightness selects the positron basemap', () {

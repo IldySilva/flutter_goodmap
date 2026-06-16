@@ -1,6 +1,6 @@
 // test/registry_test.dart
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mapcn_flutter/src/internal/registry.dart';
+import 'package:goodmap/src/internal/registry.dart';
 
 void main() {
   test('add returns incrementing ids and stores values', () {

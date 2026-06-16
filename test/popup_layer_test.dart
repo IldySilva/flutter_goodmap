@@ -3,13 +3,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:mapcn_flutter/src/mapcn_controller.dart';
-import 'package:mapcn_flutter/src/popups/popup_layer.dart';
+import 'package:goodmap/src/good_map_controller.dart';
+import 'package:goodmap/src/popups/popup_layer.dart';
 import 'package:mocktail/mocktail.dart';
 import 'helpers/mock_native_controller.dart';
 
 void main() {
-  setUpAll(registerMapcnFallbacks);
+  setUpAll(registerGoodFallbacks);
 
   testWidgets('positions an overlay entry at the projected screen offset',
       (tester) async {
@@ -28,7 +28,7 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(
       home: Stack(children: [
-        MapcnOverlayLayer(native: native, entries: entries, cameraVersion: 0),
+        GoodOverlayLayer(native: native, entries: entries, cameraVersion: 0),
       ]),
     ));
     await tester.pumpAndSettle();
@@ -56,7 +56,7 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(
       home: Stack(children: [
-        MapcnOverlayLayer(native: native, entries: entries, cameraVersion: 0),
+        GoodOverlayLayer(native: native, entries: entries, cameraVersion: 0),
       ]),
     ));
     await tester.pumpAndSettle();

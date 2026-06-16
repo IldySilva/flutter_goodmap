@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
-import 'package:mapcn_flutter/src/globe/mercator.dart';
+import 'package:goodmap/src/globe/mercator.dart';
 
 void main() {
   group('Mercator Coordinate Math', () {

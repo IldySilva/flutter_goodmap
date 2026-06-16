@@ -1,7 +1,7 @@
-name: mapcn_flutter
+name: goodmap
 description: Theme-aware, ready-to-use Flutter map components built on maplibre_gl.
 version: 0.1.0
-repository: https://github.com/ildysilva/mapcn_flutter
+repository: https://github.com/ildysilva/goodmap
 
 environment:
   sdk: ">=3.7.0 <4.0.0"

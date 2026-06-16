@@ -1,21 +1,21 @@
 // test/mapcn_controller_camera_test.dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:mapcn_flutter/src/mapcn_controller.dart';
+import 'package:goodmap/src/good_map_controller.dart';
 import 'package:mocktail/mocktail.dart';
 import 'helpers/mock_native_controller.dart';
 
 void main() {
-  setUpAll(registerMapcnFallbacks);
+  setUpAll(registerGoodFallbacks);
 
   late MockMapLibreMapController native;
-  late MapcnController controller;
+  late GoodMapController controller;
 
   setUp(() {
     native = MockMapLibreMapController();
     when(() => native.animateCamera(any())).thenAnswer((_) async => true);
     when(() => native.moveCamera(any())).thenAnswer((_) async => true);
-    controller = MapcnController(native);
+    controller = GoodMapController(native);
   });
 
   test('flyTo animates to the target with zoom', () async {

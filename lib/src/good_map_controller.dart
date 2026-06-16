@@ -1,4 +1,4 @@
-// lib/src/mapcn_controller.dart
+// lib/src/good_map_controller.dart
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart' show rootBundle;
@@ -14,11 +14,11 @@ export 'popups/popup.dart' show PopupId, PopupOptions;
 export 'markers/marker.dart' show MarkerId, MarkerImage, MarkerOptions;
 export 'lines/polyline.dart' show PolylineId, PolylineOptions;
 
-/// Single point of imperative interaction with a [MapcnMap]. Wraps the native
+/// Single point of imperative interaction with a [GoodMap]. Wraps the native
 /// [MapLibreMapController] and owns the marker + popup registries. Notifies
 /// listeners (the overlay layer) whenever overlay entries change.
-class MapcnController extends ChangeNotifier {
-  MapcnController(this._native) {
+class GoodMapController extends ChangeNotifier {
+  GoodMapController(this._native) {
     _markers.addListener(notifyListeners);
     _popups.addListener(notifyListeners);
   }

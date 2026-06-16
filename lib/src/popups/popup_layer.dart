@@ -3,14 +3,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
-import '../mapcn_controller.dart' show OverlayEntryData;
+import '../good_map_controller.dart' show OverlayEntryData;
 
 /// Projects geographically-anchored overlay entries onto screen offsets and
 /// positions each in the enclosing [Stack]. Re-projects whenever [entries] or
 /// [cameraVersion] changes. Off-screen entries are placed far out of view
 /// rather than removed, to avoid flicker during gestures.
-class MapcnOverlayLayer extends StatefulWidget {
-  const MapcnOverlayLayer({
+class GoodOverlayLayer extends StatefulWidget {
+  const GoodOverlayLayer({
     required this.native,
     required this.entries,
     required this.cameraVersion,
@@ -22,10 +22,10 @@ class MapcnOverlayLayer extends StatefulWidget {
   final int cameraVersion;
 
   @override
-  State<MapcnOverlayLayer> createState() => _MapcnOverlayLayerState();
+  State<GoodOverlayLayer> createState() => _GoodOverlayLayerState();
 }
 
-class _MapcnOverlayLayerState extends State<MapcnOverlayLayer> {
+class _GoodOverlayLayerState extends State<GoodOverlayLayer> {
   Map<Object, Offset> _offsets = <Object, Offset>{};
 
   @override
@@ -35,7 +35,7 @@ class _MapcnOverlayLayerState extends State<MapcnOverlayLayer> {
   }
 
   @override
-  void didUpdateWidget(MapcnOverlayLayer old) {
+  void didUpdateWidget(GoodOverlayLayer old) {
     super.didUpdateWidget(old);
     if (old.cameraVersion != widget.cameraVersion ||
         old.entries != widget.entries) {

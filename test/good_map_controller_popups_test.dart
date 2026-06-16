@@ -2,18 +2,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:mapcn_flutter/src/mapcn_controller.dart';
+import 'package:goodmap/src/good_map_controller.dart';
 import 'helpers/mock_native_controller.dart';
 
 void main() {
-  setUpAll(registerMapcnFallbacks);
+  setUpAll(registerGoodFallbacks);
 
   late MockMapLibreMapController native;
-  late MapcnController controller;
+  late GoodMapController controller;
 
   setUp(() {
     native = MockMapLibreMapController();
-    controller = MapcnController(native);
+    controller = GoodMapController(native);
   });
 
   test('showPopup returns an id and appends an overlay entry', () {

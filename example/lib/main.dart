@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:mapcn_flutter/mapcn.dart';
+import 'package:goodmap/goodmap.dart';
 
 import 'demo_data.dart';
 import 'demo_widgets.dart';
@@ -31,7 +31,7 @@ class _ExampleAppState extends State<ExampleApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'mapcn_flutter example',
+      title: 'goodmap example',
       debugShowCheckedModeBanner: false,
       themeMode: _mode,
       theme: ThemeData(
@@ -75,7 +75,7 @@ class DemoHome extends StatefulWidget {
 }
 
 class _DemoHomeState extends State<DemoHome> {
-  MapcnController? _controller;
+  GoodMapController? _controller;
   PopupId? _activePopup;
 
   // Live marker (updateMarker on a timer).
@@ -96,7 +96,7 @@ class _DemoHomeState extends State<DemoHome> {
     super.dispose();
   }
 
-  void _onMapReady(MapcnController c) {
+  void _onMapReady(GoodMapController c) {
     _controller = c;
     for (final poi in kPois) {
       c.addMarker(
@@ -243,10 +243,10 @@ class _DemoHomeState extends State<DemoHome> {
     setState(() => _glPins.addAll(ids));
   }
 
-  MapcnTheme? _mapTheme(BuildContext context) {
+  GoodMapTheme? _mapTheme(BuildContext context) {
     if (!widget.customTheme) return null;
     final scheme = Theme.of(context).colorScheme;
-    return MapcnTheme.fromColorScheme(scheme).copyWith(
+    return GoodMapTheme.fromColorScheme(scheme).copyWith(
       controlBackground: Colors.deepOrange,
       controlForeground: Colors.white,
     );
@@ -257,7 +257,7 @@ class _DemoHomeState extends State<DemoHome> {
     final ready = _controller != null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('mapcn_flutter'),
+        title: const Text('goodmap'),
         actions: [
           IconButton(
             tooltip: widget.customTheme
@@ -278,10 +278,10 @@ class _DemoHomeState extends State<DemoHome> {
       body: Column(
         children: [
           Expanded(
-            child: MapcnMap(
+            child: GoodMap(
               initialCenter: _sfCenter,
               initialZoom: 11,
-              controls: const MapcnControls(zoom: true, compass: true),
+              controls: const GoodControls(zoom: true, compass: true),
               theme: _mapTheme(context),
               onMapReady: _onMapReady,
             ),

@@ -1,9 +1,9 @@
 library;
 
-export 'src/controls/controls.dart' show MapcnControls;
-export 'src/mapcn_controller.dart'
+export 'src/controls/controls.dart' show GoodControls;
+export 'src/good_map_controller.dart'
     show
-        MapcnController,
+        GoodMapController,
         MarkerId,
         MarkerImage,
         MarkerOptions,
@@ -12,10 +12,10 @@ export 'src/mapcn_controller.dart'
         PolylineId,
         PolylineOptions;
 export 'src/globe/globe_overlays.dart' show GlobePoint, GlobeArc;
-export 'src/globe/mapcn_globe.dart' show MapcnGlobe;
-export 'src/mapcn_map.dart' show MapcnMap;
+export 'src/globe/good_globe.dart' show GoodGlobe;
+export 'src/good_map.dart' show GoodMap;
 export 'src/theme/basemaps.dart' show Basemaps;
-export 'src/theme/mapcn_theme.dart' show MapcnTheme;
+export 'src/theme/good_map_theme.dart' show GoodMapTheme;
 
 // Re-export the geographic primitives users need so they don't have to add a
 // separate maplibre_gl import for the common case.

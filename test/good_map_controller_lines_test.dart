@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:mapcn_flutter/src/mapcn_controller.dart';
+import 'package:goodmap/src/good_map_controller.dart';
 import 'package:mocktail/mocktail.dart';
 import 'helpers/mock_native_controller.dart';
 
 class _FakeLine extends Fake implements Line {}
 
 void main() {
-  setUpAll(registerMapcnFallbacks);
+  setUpAll(registerGoodFallbacks);
 
   late MockMapLibreMapController native;
-  late MapcnController controller;
+  late GoodMapController controller;
 
   setUp(() {
     native = MockMapLibreMapController();
     when(() => native.addLine(any())).thenAnswer((_) async => _FakeLine());
     when(() => native.removeLine(any())).thenAnswer((_) async {});
-    controller = MapcnController(native);
+    controller = GoodMapController(native);
   });
 
   test('addPolyline returns an id and draws a native line', () async {

@@ -2,7 +2,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
-/// Opaque handle returned by [MapcnController.addMarker].
+/// Opaque handle returned by [GoodMapController.addMarker].
 @immutable
 class MarkerId {
   const MarkerId(this.value);

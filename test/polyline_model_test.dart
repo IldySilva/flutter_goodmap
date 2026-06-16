@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
-import 'package:mapcn_flutter/src/lines/polyline.dart';
+import 'package:goodmap/src/lines/polyline.dart';
 
 void main() {
   test('PolylineId equality is by value', () {

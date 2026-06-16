@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
-/// Opaque handle returned by [MapcnController.addPolyline].
+/// Opaque handle returned by [GoodMapController.addPolyline].
 @immutable
 class PolylineId {
   const PolylineId(this.value);

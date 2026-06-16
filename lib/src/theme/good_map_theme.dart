@@ -1,11 +1,11 @@
-// lib/src/theme/mapcn_theme.dart
+// lib/src/theme/good_map_theme.dart
 import 'package:flutter/material.dart';
 
 /// Pure data: marker/popup/control styling tokens derived from a [ColorScheme].
-/// All fields are overridable via [copyWith] or the [MapcnTheme] constructor.
+/// All fields are overridable via [copyWith] or the [GoodMapTheme] constructor.
 @immutable
-class MapcnTheme {
-  const MapcnTheme({
+class GoodMapTheme {
+  const GoodMapTheme({
     required this.markerColor,
     required this.popupBackground,
     required this.popupBorder,
@@ -21,7 +21,7 @@ class MapcnTheme {
   final Color controlBackground;
   final Color controlForeground;
 
-  factory MapcnTheme.fromColorScheme(ColorScheme scheme) => MapcnTheme(
+  factory GoodMapTheme.fromColorScheme(ColorScheme scheme) => GoodMapTheme(
         markerColor: scheme.primary,
         popupBackground: scheme.surface,
         popupBorder: scheme.outlineVariant,
@@ -30,7 +30,7 @@ class MapcnTheme {
         controlForeground: scheme.onSurface,
       );
 
-  MapcnTheme copyWith({
+  GoodMapTheme copyWith({
     Color? markerColor,
     Color? popupBackground,
     Color? popupBorder,
@@ -38,7 +38,7 @@ class MapcnTheme {
     Color? controlBackground,
     Color? controlForeground,
   }) =>
-      MapcnTheme(
+      GoodMapTheme(
         markerColor: markerColor ?? this.markerColor,
         popupBackground: popupBackground ?? this.popupBackground,
         popupBorder: popupBorder ?? this.popupBorder,
