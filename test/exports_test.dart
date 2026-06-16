@@ -6,6 +6,7 @@ void main() {
   test('public surface is exported', () {
     // Compile-time check: referencing these confirms they are exported.
     expect(MapcnMap, isNotNull);
+    expect(MapcnGlobe, isNotNull);
     expect(MapcnControls, isNotNull);
     expect(MapcnTheme, isNotNull);
     expect(MapcnController, isNotNull);

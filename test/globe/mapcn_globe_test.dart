@@ -9,7 +9,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: MapcnGlobe(
         initialCenter: const LatLng(0, 0),
-        onCameraChanged: (cam) => seen = cam.center,
+        onCameraChanged: (c) => seen = c,
         renderEnabled: false,
       ),
     ));
@@ -19,20 +19,20 @@ void main() {
     expect(seen!.longitude, isNot(0));
   });
 
-  testWidgets('vertical drag changes latitude and clamps at the poles',
+  testWidgets('vertical drag changes latitude and clamps near the poles',
       (tester) async {
     LatLng? seen;
     await tester.pumpWidget(MaterialApp(
       home: MapcnGlobe(
         initialCenter: const LatLng(0, 0),
-        onCameraChanged: (cam) => seen = cam.center,
+        onCameraChanged: (c) => seen = c,
         renderEnabled: false,
       ),
     ));
     await tester.drag(find.byType(MapcnGlobe), const Offset(0, 5000));
     await tester.pump();
     expect(seen, isNotNull);
-    expect(seen!.latitude, lessThanOrEqualTo(89.0));
+    expect(seen!.latitude, lessThanOrEqualTo(85.0));
     expect(seen!.latitude, greaterThan(0));
   });
 }

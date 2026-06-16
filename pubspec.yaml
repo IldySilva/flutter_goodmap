@@ -12,8 +12,6 @@ dependencies:
     sdk: flutter
   maplibre_gl: ^0.26.1
   vector_math: ^2.1.4
-  flutter_gpu:
-    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -22,3 +20,5 @@ dev_dependencies:
   mocktail: ^1.0.4
 
 flutter:
+  shaders:
+    - shaders/sphere.frag
