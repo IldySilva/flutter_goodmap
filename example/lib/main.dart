@@ -141,6 +141,11 @@ class _DemoHomeState extends State<DemoHome> {
     const CameraPosition(target: _sfCenter, zoom: 12.5, bearing: 45, tilt: 45),
   );
 
+  // "Mapa mundi": zoom out to the whole flat world map.
+  void _worldView() => _controller?.animateTo(
+    const CameraPosition(target: LatLng(20, 0), zoom: 1),
+  );
+
   // --- Routes / polylines -------------------------------------------------
 
   void _togglePoiRoute() {
@@ -289,6 +294,7 @@ class _DemoHomeState extends State<DemoHome> {
             onFitAll: _fitAll,
             onFlyToBridge: _flyToBridge,
             onTilt: _tiltAndRotate,
+            onWorld: _worldView,
             onToggleRoute: _togglePoiRoute,
             onToggleLive: _toggleLiveMarker,
             onToggleGl: _toggleGlPins,
@@ -312,6 +318,7 @@ class _ControlPanel extends StatelessWidget {
     required this.onFitAll,
     required this.onFlyToBridge,
     required this.onTilt,
+    required this.onWorld,
     required this.onToggleRoute,
     required this.onToggleLive,
     required this.onToggleGl,
@@ -325,6 +332,7 @@ class _ControlPanel extends StatelessWidget {
   final VoidCallback onFitAll;
   final VoidCallback onFlyToBridge;
   final VoidCallback onTilt;
+  final VoidCallback onWorld;
   final VoidCallback onToggleRoute;
   final VoidCallback onToggleLive;
   final VoidCallback onToggleGl;
@@ -367,6 +375,11 @@ class _ControlPanel extends StatelessWidget {
                       icon: Icons.threed_rotation,
                       label: 'Tilt & rotate',
                       onTap: enabled ? onTilt : null,
+                    ),
+                    _DemoButton(
+                      icon: Icons.public,
+                      label: 'World',
+                      onTap: enabled ? onWorld : null,
                     ),
                     _DemoButton(
                       icon: routeOn ? Icons.timeline : Icons.route,
