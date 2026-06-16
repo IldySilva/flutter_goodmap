@@ -95,6 +95,18 @@ class MapcnController extends ChangeNotifier {
     _markers.clear();
   }
 
+  /// Re-creates GL symbols on a freshly loaded style (e.g. after a theme
+  /// change). Overlay-widget markers and popups need no re-application — they
+  /// are Flutter widgets, not part of the GL scene.
+  void reapplySymbols() {
+    _symbols.clear();
+    for (final entry in _markers.items.entries) {
+      if (entry.value.image != null) {
+        _createSymbol(entry.key, entry.value);
+      }
+    }
+  }
+
   Future<void> _createSymbol(int id, MarkerOptions options) async {
     final image = options.image!;
     final Uint8List bytes =
