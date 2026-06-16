@@ -34,6 +34,9 @@ dependencies:
   mapcn_flutter:
     path: ../
 
+  flutter_gpu:
+    sdk: flutter
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -48,6 +51,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_gpu_shaders: 0.5.1
+  hooks: ^2.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -63,6 +68,7 @@ flutter:
   assets:
     - assets/pin_indigo.png
     - assets/pin_teal.png
+    - build/shaderbundles/globe.shaderbundle
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

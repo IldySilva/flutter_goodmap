@@ -21,7 +21,8 @@ class GlobeRenderer {
 
   /// Load shaders + upload the static sphere geometry. Call once.
   void initialize() {
-    _shaderLib = gpu.ShaderLibrary.fromAsset('shaders/globe.shaderbundle.json');
+    _shaderLib =
+        gpu.ShaderLibrary.fromAsset('build/shaderbundles/globe.shaderbundle');
     _vertices = gpu.gpuContext.createDeviceBufferWithCopy(
       ByteData.sublistView(_mesh.vertices),
     );
