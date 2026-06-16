@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
+import 'globe_overlays.dart';
 import 'sphere_projection.dart';
 import 'sphere_shader_painter.dart';
 import 'tile_atlas.dart';
@@ -16,6 +17,8 @@ class MapcnGlobe extends StatefulWidget {
   const MapcnGlobe({
     required this.initialCenter,
     this.initialZoom = 1,
+    this.points = const [],
+    this.arcs = const [],
     this.onCameraChanged,
     this.onTap,
     this.renderEnabled = true,
@@ -24,6 +27,12 @@ class MapcnGlobe extends StatefulWidget {
 
   final LatLng initialCenter;
   final double initialZoom;
+
+  /// Labelled points plotted on the globe.
+  final List<GlobePoint> points;
+
+  /// Great-circle arcs drawn between coordinates.
+  final List<GlobeArc> arcs;
 
   /// Called whenever the camera centre changes (drag/zoom/inertia).
   final void Function(LatLng center)? onCameraChanged;
@@ -212,15 +221,37 @@ class _MapcnGlobeState extends State<MapcnGlobe>
             );
           }
           final shortSide = math.min(_lastSize.width, _lastSize.height);
-          return CustomPaint(
-            size: Size.infinite,
-            painter: SphereShaderPainter(
-              shader: shader,
-              center: Offset(_lastSize.width / 2, _lastSize.height / 2),
-              radius: globeRadius(_zoom, shortSide),
-              rotationX: _rotationX,
-              rotationZ: _rotationZ,
-            ),
+          final center = Offset(_lastSize.width / 2, _lastSize.height / 2);
+          final radius = globeRadius(_zoom, shortSide);
+          final projection = SphereProjection(
+            center: center,
+            radius: radius,
+            rotationX: _rotationX,
+            rotationZ: _rotationZ,
+          );
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              CustomPaint(
+                size: Size.infinite,
+                painter: SphereShaderPainter(
+                  shader: shader,
+                  center: center,
+                  radius: radius,
+                  rotationX: _rotationX,
+                  rotationZ: _rotationZ,
+                ),
+              ),
+              if (widget.arcs.isNotEmpty || widget.points.isNotEmpty)
+                CustomPaint(
+                  size: Size.infinite,
+                  painter: GlobeOverlayPainter(
+                    projection: projection,
+                    arcs: widget.arcs,
+                    points: widget.points,
+                  ),
+                ),
+            ],
           );
         },
       ),

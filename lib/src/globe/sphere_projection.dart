@@ -58,6 +58,25 @@ class SphereProjection {
     return LatLng(lat * 180.0 / math.pi, lon * 180.0 / math.pi);
   }
 
+  /// Unit direction vector for a coordinate (length 1).
+  static List<double> latLngUnit(LatLng c) {
+    final lat = c.latitude * math.pi / 180.0;
+    final lon = c.longitude * math.pi / 180.0;
+    final cl = math.cos(lat);
+    return [cl * math.cos(lon), cl * math.sin(lon), math.sin(lat)];
+  }
+
+  /// Projects a unit direction [dir] at [radiusScale] x [radius] (1.0 = surface,
+  /// >1 lifts above the globe — used for raised arcs). Returns the screen offset
+  /// and depth (depth > 0 means toward the viewer / in front of the globe).
+  ({Offset screen, double depth}) projectDirection(
+      List<double> dir, double radiusScale) {
+    final s = radius * radiusScale;
+    final r1 = _rotateZ(dir[0] * s, dir[1] * s, dir[2] * s, -rotationZ);
+    final r2 = _rotateY(r1[0], r1[1], r1[2], rotationX);
+    return (screen: Offset(center.dx + r2[1], center.dy - r2[2]), depth: r2[0]);
+  }
+
   // Returns the rotated 3D position [x, y, z] (x = depth toward viewer).
   // Forward rotation brings the camera-centre coordinate onto the +X axis:
   // rotateZ(-rotationZ) then rotateY(+rotationX).

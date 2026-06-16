@@ -11,6 +11,7 @@ export 'src/mapcn_controller.dart'
         PopupOptions,
         PolylineId,
         PolylineOptions;
+export 'src/globe/globe_overlays.dart' show GlobePoint, GlobeArc;
 export 'src/globe/mapcn_globe.dart' show MapcnGlobe;
 export 'src/mapcn_map.dart' show MapcnMap;
 export 'src/theme/basemaps.dart' show Basemaps;
