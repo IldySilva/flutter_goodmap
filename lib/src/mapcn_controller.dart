@@ -9,6 +9,9 @@ import 'internal/registry.dart';
 import 'markers/marker.dart';
 import 'popups/popup.dart';
 
+export 'popups/popup.dart' show PopupId, PopupOptions;
+export 'markers/marker.dart' show MarkerId, MarkerImage, MarkerOptions;
+
 /// Single point of imperative interaction with a [MapcnMap]. Wraps the native
 /// [MapLibreMapController] and owns the marker + popup registries. Notifies
 /// listeners (the overlay layer) whenever overlay entries change.
@@ -112,8 +115,24 @@ class MapcnController extends ChangeNotifier {
     if (symbol != null) _native.removeSymbol(symbol);
   }
 
+  // --- Popups -------------------------------------------------------------
+
+  PopupId showPopup(
+    LatLng position,
+    Widget child, {
+    Alignment alignment = Alignment.bottomCenter,
+  }) {
+    final int id = _popups.add(
+      PopupOptions(position: position, child: child, alignment: alignment),
+    );
+    return PopupId(id);
+  }
+
+  void hidePopup(PopupId id) => _popups.remove(id.value);
+
+  void clearPopups() => _popups.clear();
+
   /// All overlay-widget entries (child-markers + popups) to be projected.
-  /// Popups are appended in Task 8.
   List<OverlayEntryData> get overlayEntries => <OverlayEntryData>[
         for (final entry in _markers.items.entries)
           if (entry.value.child != null)
@@ -124,6 +143,13 @@ class MapcnController extends ChangeNotifier {
               onTap: entry.value.onTap,
               child: entry.value.child!,
             ),
+        for (final entry in _popups.items.entries)
+          OverlayEntryData(
+            key: PopupId(entry.key),
+            position: entry.value.position,
+            alignment: entry.value.alignment,
+            child: entry.value.child,
+          ),
       ];
 
   @override
