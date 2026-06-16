@@ -52,23 +52,28 @@ class GlobeOverlayPainter extends CustomPainter {
     required this.projection,
     required this.arcs,
     required this.points,
-  });
+    this.dashAnimation,
+  }) : super(repaint: dashAnimation);
 
   final SphereProjection projection;
   final List<GlobeArc> arcs;
   final List<GlobePoint> points;
 
+  /// Drives the marching-dash phase (0..1, repeating). Null = static dashes.
+  final Animation<double>? dashAnimation;
+
   @override
   void paint(Canvas canvas, Size size) {
+    final phase = dashAnimation?.value ?? 0.0;
     for (final arc in arcs) {
-      _paintArc(canvas, arc);
+      _paintArc(canvas, arc, phase);
     }
     for (final point in points) {
       _paintPoint(canvas, point);
     }
   }
 
-  void _paintArc(Canvas canvas, GlobeArc arc) {
+  void _paintArc(Canvas canvas, GlobeArc arc, double phase) {
     final a = SphereProjection.latLngUnit(arc.from);
     final b = SphereProjection.latLngUnit(arc.to);
     final dot = (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0);
@@ -97,26 +102,32 @@ class GlobeOverlayPainter extends CustomPainter {
           run.lineTo(p.screen.dx, p.screen.dy);
         }
       } else if (run != null) {
-        _strokePath(canvas, run, paint, arc.dashed);
+        _strokePath(canvas, run, paint, arc.dashed, phase);
         run = null;
       }
     }
-    if (run != null) _strokePath(canvas, run, paint, arc.dashed);
+    if (run != null) _strokePath(canvas, run, paint, arc.dashed, phase);
   }
 
-  void _strokePath(Canvas canvas, Path path, Paint paint, bool dashed) {
+  void _strokePath(
+      Canvas canvas, Path path, Paint paint, bool dashed, double phase) {
     if (!dashed) {
       canvas.drawPath(path, paint);
       return;
     }
     const dash = 6.0;
     const gap = 5.0;
+    const period = dash + gap;
     for (final metric in path.computeMetrics()) {
-      var d = 0.0;
+      // Negative start offset scrolls dashes from `from` toward `to`.
+      var d = -(phase % 1.0) * period;
       while (d < metric.length) {
+        final start = math.max(0.0, d);
         final end = math.min(d + dash, metric.length);
-        canvas.drawPath(metric.extractPath(d, end), paint);
-        d = end + gap;
+        if (end > start) {
+          canvas.drawPath(metric.extractPath(start, end), paint);
+        }
+        d += period;
       }
     }
   }
@@ -170,4 +181,42 @@ class GlobeOverlayPainter extends CustomPainter {
       old.projection != projection ||
       old.arcs != arcs ||
       old.points != points;
+}
+
+/// A soft glow ring around the globe silhouette. Drawn behind the sphere so only
+/// the part outside the disc shows.
+class AtmospherePainter extends CustomPainter {
+  AtmospherePainter({
+    required this.center,
+    required this.radius,
+    required this.color,
+  });
+
+  final Offset center;
+  final double radius;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final glowRadius = radius * 1.22;
+    final edge = radius / glowRadius; // where the globe silhouette sits
+    final gradient = RadialGradient(
+      colors: [
+        color.withValues(alpha: 0),
+        color.withValues(alpha: 0.45),
+        color.withValues(alpha: 0),
+      ],
+      stops: [edge - 0.06, edge, 1.0],
+    );
+    final rect = Rect.fromCircle(center: center, radius: glowRadius);
+    canvas.drawCircle(
+      center,
+      glowRadius,
+      Paint()..shader = gradient.createShader(rect),
+    );
+  }
+
+  @override
+  bool shouldRepaint(AtmospherePainter old) =>
+      old.center != center || old.radius != radius || old.color != color;
 }

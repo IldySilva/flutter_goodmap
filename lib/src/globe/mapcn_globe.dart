@@ -19,10 +19,13 @@ class MapcnGlobe extends StatefulWidget {
     this.initialZoom = 1,
     this.points = const [],
     this.arcs = const [],
+    this.atmosphere = false,
+    this.atmosphereColor,
     this.onCameraChanged,
     this.onTap,
-    this.renderEnabled = true,
+    this.onPointTap,
     super.key,
+    this.renderEnabled = true,
   });
 
   final LatLng initialCenter;
@@ -34,11 +37,21 @@ class MapcnGlobe extends StatefulWidget {
   /// Great-circle arcs drawn between coordinates.
   final List<GlobeArc> arcs;
 
+  /// Draws a soft atmospheric glow ring around the globe. Off by default.
+  final bool atmosphere;
+
+  /// Atmosphere colour; defaults to the theme's primary colour.
+  final Color? atmosphereColor;
+
   /// Called whenever the camera centre changes (drag/zoom/inertia).
   final void Function(LatLng center)? onCameraChanged;
 
   /// Called with the geographic coordinate under a tap, or null off-globe.
   final void Function(LatLng? coordinate)? onTap;
+
+  /// Called when a [GlobePoint] is tapped. The globe also shows a small popup
+  /// card for the tapped point automatically.
+  final void Function(GlobePoint point)? onPointTap;
 
   /// When false (tests), GPU shader/atlas and the inertia ticker are skipped.
   final bool renderEnabled;
@@ -48,8 +61,16 @@ class MapcnGlobe extends StatefulWidget {
 }
 
 class _MapcnGlobeState extends State<MapcnGlobe>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final SphereShaderManager _shaderManager = SphereShaderManager();
+
+  // Drives marching-dash animation on arcs.
+  late final AnimationController _dash = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+
+  GlobePoint? _selectedPoint;
 
   double _rotationX = 0; // latitude facing viewer (radians)
   double _rotationZ = 0; // longitude facing viewer (radians)
@@ -82,6 +103,7 @@ class _MapcnGlobeState extends State<MapcnGlobe>
     _rotationZ = widget.initialCenter.longitude * math.pi / 180.0;
     _zoom = widget.initialZoom;
     if (widget.renderEnabled) {
+      if (widget.arcs.isNotEmpty) _dash.repeat();
       _shaderManager.load().then((ok) {
         if (ok && mounted) _rebuildShader();
       });
@@ -177,8 +199,6 @@ class _MapcnGlobeState extends State<MapcnGlobe>
   }
 
   void _onTapUp(TapUpDetails d) {
-    final cb = widget.onTap;
-    if (cb == null) return;
     final size = _lastSize;
     if (size.isEmpty) return;
     final shortSide = math.min(size.width, size.height);
@@ -188,7 +208,26 @@ class _MapcnGlobeState extends State<MapcnGlobe>
       rotationX: _rotationX,
       rotationZ: _rotationZ,
     );
-    cb(proj.unproject(d.localPosition));
+
+    // Hit-test visible points first (within 22px of the projected dot).
+    GlobePoint? hit;
+    var best = 22.0;
+    for (final p in widget.points) {
+      final screen = proj.project(p.coordinate);
+      if (screen == null) continue;
+      final dist = (screen - d.localPosition).distance;
+      if (dist < best) {
+        best = dist;
+        hit = p;
+      }
+    }
+
+    setState(() => _selectedPoint = hit);
+    if (hit != null) {
+      widget.onPointTap?.call(hit);
+    } else {
+      widget.onTap?.call(proj.unproject(d.localPosition));
+    }
   }
 
   LatLng get _center =>
@@ -196,6 +235,7 @@ class _MapcnGlobeState extends State<MapcnGlobe>
 
   @override
   void dispose() {
+    _dash.dispose();
     _ticker.dispose();
     _atlasBuilder?.dispose();
     _atlas?.dispose();
@@ -229,9 +269,22 @@ class _MapcnGlobeState extends State<MapcnGlobe>
             rotationX: _rotationX,
             rotationZ: _rotationZ,
           );
+          final selected = _selectedPoint;
+          final selectedScreen =
+              selected == null ? null : projection.project(selected.coordinate);
           return Stack(
             fit: StackFit.expand,
             children: [
+              if (widget.atmosphere)
+                CustomPaint(
+                  size: Size.infinite,
+                  painter: AtmospherePainter(
+                    center: center,
+                    radius: radius,
+                    color: widget.atmosphereColor ??
+                        Theme.of(context).colorScheme.primary,
+                  ),
+                ),
               CustomPaint(
                 size: Size.infinite,
                 painter: SphereShaderPainter(
@@ -249,11 +302,62 @@ class _MapcnGlobeState extends State<MapcnGlobe>
                     projection: projection,
                     arcs: widget.arcs,
                     points: widget.points,
+                    dashAnimation: _dash,
+                  ),
+                ),
+              // Popup card for a tapped point — follows it, hides when occluded.
+              if (selected != null && selectedScreen != null)
+                Positioned(
+                  left: selectedScreen.dx - 90,
+                  top: selectedScreen.dy - 56,
+                  width: 180,
+                  child: _PointPopup(
+                    label: selected.label ?? 'Point',
+                    onClose: () => setState(() => _selectedPoint = null),
                   ),
                 ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Small card anchored above a tapped [GlobePoint].
+class _PointPopup extends StatelessWidget {
+  const _PointPopup({required this.label, required this.onClose});
+
+  final String label;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 6,
+      borderRadius: BorderRadius.circular(10),
+      color: Theme.of(context).colorScheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.titleSmall,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            InkWell(
+              onTap: onClose,
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(Icons.close, size: 16),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
