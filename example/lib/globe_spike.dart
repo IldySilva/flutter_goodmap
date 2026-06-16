@@ -24,7 +24,11 @@ const _cities = <(String, LatLng)>[
 
 final _points = <GlobePoint>[
   const GlobePoint(
-      coordinate: _luanda, label: 'Luanda', color: Colors.white, radius: 6),
+    coordinate: _luanda,
+    label: 'Luanda',
+    color: Colors.white,
+    radius: 6,
+  ),
   for (final c in _cities)
     GlobePoint(coordinate: c.$2, label: c.$1, color: const Color(0xFF4F86F7)),
 ];
@@ -49,8 +53,14 @@ class _GlobeSpikeAppState extends State<GlobeSpikeApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       themeMode: _mode,
-      theme: ThemeData(colorSchemeSeed: Colors.indigo, brightness: Brightness.light),
-      darkTheme: ThemeData(colorSchemeSeed: Colors.indigo, brightness: Brightness.dark),
+      theme: ThemeData(
+        colorSchemeSeed: Colors.indigo,
+        brightness: Brightness.light,
+      ),
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.indigo,
+        brightness: Brightness.dark,
+      ),
       home: Scaffold(
         appBar: AppBar(
           title: const Text('mapcn globe'),
@@ -58,9 +68,13 @@ class _GlobeSpikeAppState extends State<GlobeSpikeApp> {
             IconButton(
               tooltip: 'Toggle light/dark',
               icon: Icon(
-                  _mode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode),
-              onPressed: () => setState(() => _mode =
-                  _mode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark),
+                _mode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
+              ),
+              onPressed: () => setState(
+                () => _mode = _mode == ThemeMode.dark
+                    ? ThemeMode.light
+                    : ThemeMode.dark,
+              ),
             ),
           ],
         ),
@@ -72,7 +86,7 @@ class _GlobeSpikeAppState extends State<GlobeSpikeApp> {
                 initialZoom: 1.0,
                 points: _points,
                 arcs: _arcs,
-                atmosphere: true,
+                atmosphere: false,
                 onTap: (c) => setState(() => _tapped = c),
               ),
             ),
@@ -81,8 +95,10 @@ class _GlobeSpikeAppState extends State<GlobeSpikeApp> {
                 left: 12,
                 bottom: 12,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(8),

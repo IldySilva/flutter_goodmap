@@ -30,3 +30,8 @@ migrate_working_dir/
 /build/
 /coverage/
 flutter_earth_globe/
+
+# Internal planning/memory — not part of the published package
+MEMORY.md
+memory/
+docs/superpowers/plans/
