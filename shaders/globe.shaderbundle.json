@@ -1,0 +1,10 @@
+{
+  "GlobeVertex": {
+    "type": "vertex",
+    "file": "shaders/globe.vert"
+  },
+  "GlobeFragment": {
+    "type": "fragment",
+    "file": "shaders/globe.frag"
+  }
+}

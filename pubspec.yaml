@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
   maplibre_gl: ^0.26.1
   vector_math: ^2.1.4
+  flutter_gpu:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
