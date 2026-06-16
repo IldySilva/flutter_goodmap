@@ -18,11 +18,11 @@ void main() {
         .thenAnswer((_) async => const Point<num>(120, 240));
 
     final entries = [
-      OverlayEntryData(
-        key: const ValueKey('p'),
-        position: const LatLng(1, 2),
+      const OverlayEntryData(
+        key: ValueKey('p'),
+        position: LatLng(1, 2),
         alignment: Alignment.topLeft, // zero anchor translation -> exact offset
-        child: const SizedBox(key: ValueKey('child'), width: 10, height: 10),
+        child: SizedBox(key: ValueKey('child'), width: 10, height: 10),
       ),
     ];
 
