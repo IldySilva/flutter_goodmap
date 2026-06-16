@@ -1,39 +1,55 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# mapcn_flutter
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+Theme-aware, ready-to-use Flutter map components built on
+[`maplibre_gl`](https://pub.dev/packages/maplibre_gl). iOS and Android.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+## Install
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+```yaml
+dependencies:
+  mapcn_flutter: ^0.1.0
+```
 
-## Features
+## Platform setup
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+`maplibre_gl` requires iOS 13+ and Android `minSdkVersion 21`.
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
 ```dart
-const like = 'sample';
+import 'package:mapcn_flutter/mapcn.dart';
+
+MapcnMap(
+  initialCenter: const LatLng(37.77, -122.42),
+  initialZoom: 11,
+  controls: const MapcnControls(zoom: true, compass: true),
+  onMapReady: (c) {
+    final id = c.addMarker(MarkerOptions(
+      position: const LatLng(37.77, -122.42),
+      child: const Icon(Icons.location_on),
+      onTap: () => c.showPopup(
+        const LatLng(37.77, -122.42),
+        const Card(child: Padding(padding: EdgeInsets.all(12), child: Text('SF'))),
+      ),
+    ));
+  },
+)
 ```
 
-## Additional information
+The basemap follows `Theme.of(context).brightness` (CARTO positron / dark-matter).
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+## Controller API
+
+- **Camera:** `flyTo`, `animateTo`, `fitBounds`, `moveTo`
+- **Markers:** `addMarker`, `updateMarker`, `removeMarker`, `clearMarkers`
+- **Popups:** `showPopup`, `hidePopup`, `clearPopups`
+
+## Basemap terms
+
+The example app uses CARTO's public basemap styles. Review CARTO's terms before
+production use and supply your own style URL via a custom `MapcnTheme`/basemap
+if required.
+
+## License
+
+MIT
