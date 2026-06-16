@@ -6,11 +6,13 @@ import 'package:flutter/widgets.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'internal/registry.dart';
+import 'lines/polyline.dart';
 import 'markers/marker.dart';
 import 'popups/popup.dart';
 
 export 'popups/popup.dart' show PopupId, PopupOptions;
 export 'markers/marker.dart' show MarkerId, MarkerImage, MarkerOptions;
+export 'lines/polyline.dart' show PolylineId, PolylineOptions;
 
 /// Single point of imperative interaction with a [MapcnMap]. Wraps the native
 /// [MapLibreMapController] and owns the marker + popup registries. Notifies
@@ -24,6 +26,10 @@ class MapcnController extends ChangeNotifier {
   final MapLibreMapController _native;
   final Registry<MarkerOptions> _markers = Registry<MarkerOptions>();
   final Registry<PopupOptions> _popups = Registry<PopupOptions>();
+  // Polylines live only in the GL scene (not overlay widgets), so this registry
+  // is not wired to notifyListeners — it just allocates ids and stores options
+  // for re-application after a style reload.
+  final Registry<PolylineOptions> _polylines = Registry<PolylineOptions>();
 
   // --- Camera -------------------------------------------------------------
 
@@ -95,15 +101,20 @@ class MapcnController extends ChangeNotifier {
     _markers.clear();
   }
 
-  /// Re-creates GL symbols on a freshly loaded style (e.g. after a theme
-  /// change). Overlay-widget markers and popups need no re-application — they
-  /// are Flutter widgets, not part of the GL scene.
-  void reapplySymbols() {
+  /// Re-creates GL-scene objects (image-marker symbols and polylines) on a
+  /// freshly loaded style (e.g. after a theme change). Overlay-widget markers
+  /// and popups need no re-application — they are Flutter widgets, not part of
+  /// the GL scene.
+  void reapplyGlObjects() {
     _symbols.clear();
     for (final entry in _markers.items.entries) {
       if (entry.value.image != null) {
         _createSymbol(entry.key, entry.value);
       }
+    }
+    _lines.clear();
+    for (final entry in _polylines.items.entries) {
+      _createLine(entry.key, entry.value);
     }
   }
 
@@ -125,6 +136,55 @@ class MapcnController extends ChangeNotifier {
   void _disposeSymbol(int id) {
     final symbol = _symbols.remove(id);
     if (symbol != null) _native.removeSymbol(symbol);
+  }
+
+  // --- Polylines / routes -------------------------------------------------
+
+  // Maps polyline id -> native Line.
+  final Map<int, Line> _lines = <int, Line>{};
+
+  /// Draws a polyline (e.g. a route) through [points] as a native GL line.
+  PolylineId addPolyline(
+    List<LatLng> points, {
+    Color color = const Color(0xFF3F51B5),
+    double width = 4,
+  }) {
+    final options =
+        PolylineOptions(points: points, color: color, width: width);
+    final int id = _polylines.add(options);
+    _createLine(id, options);
+    return PolylineId(id);
+  }
+
+  void removePolyline(PolylineId id) {
+    if (!_polylines.items.containsKey(id.value)) return;
+    _polylines.remove(id.value);
+    _disposeLine(id.value);
+  }
+
+  void clearPolylines() {
+    for (final line in _lines.values) {
+      _native.removeLine(line);
+    }
+    _lines.clear();
+    _polylines.clear();
+  }
+
+  Future<void> _createLine(int id, PolylineOptions options) async {
+    final Line line = await _native.addLine(
+      LineOptions(
+        geometry: options.points,
+        lineColor: options.color.toHexStringRGB(),
+        lineWidth: options.width,
+        lineOpacity: options.color.a,
+      ),
+    );
+    _lines[id] = line;
+  }
+
+  void _disposeLine(int id) {
+    final line = _lines.remove(id);
+    if (line != null) _native.removeLine(line);
   }
 
   // --- Popups -------------------------------------------------------------
@@ -168,6 +228,7 @@ class MapcnController extends ChangeNotifier {
   void dispose() {
     _markers.dispose();
     _popups.dispose();
+    _polylines.dispose();
     super.dispose();
   }
 }

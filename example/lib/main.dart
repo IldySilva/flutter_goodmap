@@ -34,13 +34,21 @@ class _ExampleAppState extends State<ExampleApp> {
       title: 'mapcn_flutter example',
       debugShowCheckedModeBanner: false,
       themeMode: _mode,
-      theme: ThemeData(colorSchemeSeed: Colors.indigo, brightness: Brightness.light),
-      darkTheme: ThemeData(colorSchemeSeed: Colors.indigo, brightness: Brightness.dark),
+      theme: ThemeData(
+        colorSchemeSeed: Colors.indigo,
+        brightness: Brightness.light,
+      ),
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.indigo,
+        brightness: Brightness.dark,
+      ),
       home: DemoHome(
         customTheme: _customTheme,
         isDark: _mode == ThemeMode.dark,
         onToggleBrightness: () => setState(
-          () => _mode = _mode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light,
+          () => _mode = _mode == ThemeMode.light
+              ? ThemeMode.dark
+              : ThemeMode.light,
         ),
         onToggleCustomTheme: () => setState(() => _customTheme = !_customTheme),
       ),
@@ -77,6 +85,10 @@ class _DemoHomeState extends State<DemoHome> {
 
   // Native GL-symbol (asset) markers.
   final List<MarkerId> _glPins = [];
+
+  // Polylines / routes.
+  PolylineId? _poiRoute;
+  PolylineId? _ferryLine;
 
   @override
   void dispose() {
@@ -126,13 +138,26 @@ class _DemoHomeState extends State<DemoHome> {
       _controller?.fitBounds(poiBounds(), padding: const EdgeInsets.all(72));
 
   void _tiltAndRotate() => _controller?.animateTo(
-        const CameraPosition(
-          target: _sfCenter,
-          zoom: 12.5,
-          bearing: 45,
-          tilt: 45,
-        ),
-      );
+    const CameraPosition(target: _sfCenter, zoom: 12.5, bearing: 45, tilt: 45),
+  );
+
+  // --- Routes / polylines -------------------------------------------------
+
+  void _togglePoiRoute() {
+    final c = _controller;
+    if (c == null) return;
+    if (_poiRoute != null) {
+      c.removePolyline(_poiRoute!);
+      setState(() => _poiRoute = null);
+      return;
+    }
+    final id = c.addPolyline(
+      [for (final p in kPois) p.position],
+      color: Theme.of(context).colorScheme.primary,
+      width: 5,
+    );
+    setState(() => _poiRoute = id);
+  }
 
   // --- Live marker --------------------------------------------------------
 
@@ -143,9 +168,17 @@ class _DemoHomeState extends State<DemoHome> {
       _liveTimer?.cancel();
       _liveTimer = null;
       c.removeMarker(_liveMarker!);
+      if (_ferryLine != null) c.removePolyline(_ferryLine!);
+      _ferryLine = null;
       setState(() => _liveMarker = null);
       return;
     }
+    // Draw the route the ferry follows, then animate a marker along it.
+    _ferryLine = c.addPolyline(
+      const [...kFerryRoute, LatLng(37.7955, -122.3937)],
+      color: Colors.teal,
+      width: 4,
+    );
     _routeT = 0;
     final id = c.addMarker(
       const MarkerOptions(
@@ -194,7 +227,10 @@ class _DemoHomeState extends State<DemoHome> {
         c.addMarker(
           MarkerOptions(
             position: spot,
-            image: MarkerImage.asset('assets/pin_teal.png', size: const Size(40, 40)),
+            image: MarkerImage.asset(
+              'assets/pin_teal.png',
+              size: const Size(40, 40),
+            ),
           ),
         ),
       );
@@ -219,8 +255,12 @@ class _DemoHomeState extends State<DemoHome> {
         title: const Text('mapcn_flutter'),
         actions: [
           IconButton(
-            tooltip: widget.customTheme ? 'Default control theme' : 'Custom control theme',
-            icon: Icon(widget.customTheme ? Icons.palette : Icons.palette_outlined),
+            tooltip: widget.customTheme
+                ? 'Default control theme'
+                : 'Custom control theme',
+            icon: Icon(
+              widget.customTheme ? Icons.palette : Icons.palette_outlined,
+            ),
             onPressed: widget.onToggleCustomTheme,
           ),
           IconButton(
@@ -245,9 +285,11 @@ class _DemoHomeState extends State<DemoHome> {
             enabled: ready,
             liveOn: _liveMarker != null,
             glOn: _glPins.isNotEmpty,
+            routeOn: _poiRoute != null,
             onFitAll: _fitAll,
             onFlyToBridge: _flyToBridge,
             onTilt: _tiltAndRotate,
+            onToggleRoute: _togglePoiRoute,
             onToggleLive: _toggleLiveMarker,
             onToggleGl: _toggleGlPins,
             onClearPopups: () {
@@ -266,9 +308,11 @@ class _ControlPanel extends StatelessWidget {
     required this.enabled,
     required this.liveOn,
     required this.glOn,
+    required this.routeOn,
     required this.onFitAll,
     required this.onFlyToBridge,
     required this.onTilt,
+    required this.onToggleRoute,
     required this.onToggleLive,
     required this.onToggleGl,
     required this.onClearPopups,
@@ -277,9 +321,11 @@ class _ControlPanel extends StatelessWidget {
   final bool enabled;
   final bool liveOn;
   final bool glOn;
+  final bool routeOn;
   final VoidCallback onFitAll;
   final VoidCallback onFlyToBridge;
   final VoidCallback onTilt;
+  final VoidCallback onToggleRoute;
   final VoidCallback onToggleLive;
   final VoidCallback onToggleGl;
   final VoidCallback onClearPopups;
@@ -300,43 +346,53 @@ class _ControlPanel extends StatelessWidget {
                 style: Theme.of(context).textTheme.labelMedium,
               ),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _DemoButton(
-                    icon: Icons.fit_screen,
-                    label: 'Fit all',
-                    onTap: enabled ? onFitAll : null,
-                  ),
-                  _DemoButton(
-                    icon: Icons.flight_takeoff,
-                    label: 'Fly to bridge',
-                    onTap: enabled ? onFlyToBridge : null,
-                  ),
-                  _DemoButton(
-                    icon: Icons.threed_rotation,
-                    label: 'Tilt & rotate',
-                    onTap: enabled ? onTilt : null,
-                  ),
-                  _DemoButton(
-                    icon: liveOn ? Icons.stop_circle : Icons.directions_boat,
-                    label: liveOn ? 'Stop ferry' : 'Live ferry',
-                    selected: liveOn,
-                    onTap: enabled ? onToggleLive : null,
-                  ),
-                  _DemoButton(
-                    icon: glOn ? Icons.layers_clear : Icons.place,
-                    label: glOn ? 'Clear GL pins' : 'Drop GL pins',
-                    selected: glOn,
-                    onTap: enabled ? onToggleGl : null,
-                  ),
-                  _DemoButton(
-                    icon: Icons.close_fullscreen,
-                    label: 'Clear popups',
-                    onTap: enabled ? onClearPopups : null,
-                  ),
-                ],
+              Container(
+                alignment: Alignment.center,
+                width: double.infinity,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _DemoButton(
+                      icon: Icons.fit_screen,
+                      label: 'Fit all',
+                      onTap: enabled ? onFitAll : null,
+                    ),
+                    _DemoButton(
+                      icon: Icons.flight_takeoff,
+                      label: 'Fly to bridge',
+                      onTap: enabled ? onFlyToBridge : null,
+                    ),
+                    _DemoButton(
+                      icon: Icons.threed_rotation,
+                      label: 'Tilt & rotate',
+                      onTap: enabled ? onTilt : null,
+                    ),
+                    _DemoButton(
+                      icon: routeOn ? Icons.timeline : Icons.route,
+                      label: routeOn ? 'Hide route' : 'POI route',
+                      selected: routeOn,
+                      onTap: enabled ? onToggleRoute : null,
+                    ),
+                    _DemoButton(
+                      icon: liveOn ? Icons.stop_circle : Icons.directions_boat,
+                      label: liveOn ? 'Stop ferry' : 'Live ferry',
+                      selected: liveOn,
+                      onTap: enabled ? onToggleLive : null,
+                    ),
+                    _DemoButton(
+                      icon: glOn ? Icons.layers_clear : Icons.place,
+                      label: glOn ? 'Clear GL pins' : 'Drop GL pins',
+                      selected: glOn,
+                      onTap: enabled ? onToggleGl : null,
+                    ),
+                    _DemoButton(
+                      icon: Icons.close_fullscreen,
+                      label: 'Clear popups',
+                      onTap: enabled ? onClearPopups : null,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

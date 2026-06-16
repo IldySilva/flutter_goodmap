@@ -32,6 +32,8 @@ MapcnMapBuilder testMapBuilder(
 
 class _FallbackSymbol extends Fake implements Symbol {}
 
+class _FallbackLine extends Fake implements Line {}
+
 /// Call once in setUpAll before stubbing methods that take these types.
 void registerMapcnFallbacks() {
   registerFallbackValue(CameraUpdate.zoomIn());
@@ -39,4 +41,6 @@ void registerMapcnFallbacks() {
   registerFallbackValue(const LatLng(0, 0));
   registerFallbackValue(_FallbackSymbol()); // for removeSymbol(symbol) stubs
   registerFallbackValue(Uint8List(0)); // for addImage(bytes) stubs
+  registerFallbackValue(const LineOptions()); // for addLine(options) stubs
+  registerFallbackValue(_FallbackLine()); // for removeLine(line) stubs
 }

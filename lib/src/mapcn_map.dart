@@ -63,8 +63,9 @@ class _MapcnMapState extends State<MapcnMap> {
       _readyCalled = true;
       widget.onMapReady(_controller!);
     } else {
-      // Theme changed mid-session: GL symbols must be re-applied to the new style.
-      _controller!.reapplySymbols();
+      // Theme changed mid-session: GL-scene objects (symbols + lines) must be
+      // re-applied to the new style.
+      _controller!.reapplyGlObjects();
     }
   }
 

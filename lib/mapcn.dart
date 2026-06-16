@@ -8,7 +8,9 @@ export 'src/mapcn_controller.dart'
         MarkerImage,
         MarkerOptions,
         PopupId,
-        PopupOptions;
+        PopupOptions,
+        PolylineId,
+        PolylineOptions;
 export 'src/mapcn_map.dart' show MapcnMap;
 export 'src/theme/basemaps.dart' show Basemaps;
 export 'src/theme/mapcn_theme.dart' show MapcnTheme;
