@@ -18,7 +18,7 @@ const _cities = <(String, LatLng)>[
   ('Mumbai', LatLng(19.08, 72.88)),
   ('Singapore', LatLng(1.35, 103.82)),
   ('São Paulo', LatLng(-23.55, -46.63)),
-  ('Cape Town', LatLng(-33.92, 18.42)),
+  ('Luanda', LatLng(-8.84, 13.23)),
   ('Sydney', LatLng(-33.87, 151.21)),
 ];
 
