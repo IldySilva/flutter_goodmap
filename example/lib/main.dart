@@ -5,6 +5,7 @@ import 'package:goodmap/goodmap.dart';
 
 import 'demo_data.dart';
 import 'demo_widgets.dart';
+import 'globe_demo.dart';
 
 void main() => runApp(const ExampleApp());
 
@@ -77,6 +78,7 @@ class DemoHome extends StatefulWidget {
 class _DemoHomeState extends State<DemoHome> {
   GoodMapController? _controller;
   PopupId? _activePopup;
+  bool _showGlobe = false;
 
   // Live marker (updateMarker on a timer).
   MarkerId? _liveMarker;
@@ -257,17 +259,26 @@ class _DemoHomeState extends State<DemoHome> {
     final ready = _controller != null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('goodmap'),
+        title: SegmentedButton<bool>(
+          showSelectedIcon: false,
+          segments: const [
+            ButtonSegment(value: false, label: Text('Flat'), icon: Icon(Icons.map_outlined)),
+            ButtonSegment(value: true, label: Text('Globe'), icon: Icon(Icons.public)),
+          ],
+          selected: {_showGlobe},
+          onSelectionChanged: (s) => setState(() => _showGlobe = s.first),
+        ),
         actions: [
-          IconButton(
-            tooltip: widget.customTheme
-                ? 'Default control theme'
-                : 'Custom control theme',
-            icon: Icon(
-              widget.customTheme ? Icons.palette : Icons.palette_outlined,
+          if (!_showGlobe)
+            IconButton(
+              tooltip: widget.customTheme
+                  ? 'Default control theme'
+                  : 'Custom control theme',
+              icon: Icon(
+                widget.customTheme ? Icons.palette : Icons.palette_outlined,
+              ),
+              onPressed: widget.onToggleCustomTheme,
             ),
-            onPressed: widget.onToggleCustomTheme,
-          ),
           IconButton(
             tooltip: 'Toggle light/dark',
             icon: Icon(widget.isDark ? Icons.light_mode : Icons.dark_mode),
@@ -275,36 +286,38 @@ class _DemoHomeState extends State<DemoHome> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: GoodMap(
-              initialCenter: _sfCenter,
-              initialZoom: 11,
-              controls: const GoodControls(zoom: true, compass: true),
-              theme: _mapTheme(context),
-              onMapReady: _onMapReady,
+      body: _showGlobe
+          ? const GlobeDemo()
+          : Column(
+              children: [
+                Expanded(
+                  child: GoodMap(
+                    initialCenter: _sfCenter,
+                    initialZoom: 11,
+                    controls: const GoodControls(zoom: true, compass: true),
+                    theme: _mapTheme(context),
+                    onMapReady: _onMapReady,
+                  ),
+                ),
+                _ControlPanel(
+                  enabled: ready,
+                  liveOn: _liveMarker != null,
+                  glOn: _glPins.isNotEmpty,
+                  routeOn: _poiRoute != null,
+                  onFitAll: _fitAll,
+                  onFlyToBridge: _flyToBridge,
+                  onTilt: _tiltAndRotate,
+                  onWorld: _worldView,
+                  onToggleRoute: _togglePoiRoute,
+                  onToggleLive: _toggleLiveMarker,
+                  onToggleGl: _toggleGlPins,
+                  onClearPopups: () {
+                    _controller?.clearPopups();
+                    _activePopup = null;
+                  },
+                ),
+              ],
             ),
-          ),
-          _ControlPanel(
-            enabled: ready,
-            liveOn: _liveMarker != null,
-            glOn: _glPins.isNotEmpty,
-            routeOn: _poiRoute != null,
-            onFitAll: _fitAll,
-            onFlyToBridge: _flyToBridge,
-            onTilt: _tiltAndRotate,
-            onWorld: _worldView,
-            onToggleRoute: _togglePoiRoute,
-            onToggleLive: _toggleLiveMarker,
-            onToggleGl: _toggleGlPins,
-            onClearPopups: () {
-              _controller?.clearPopups();
-              _activePopup = null;
-            },
-          ),
-        ],
-      ),
     );
   }
 }

@@ -33,7 +33,7 @@ labels, and animated dashed arcs — back-of-globe overlays hide automatically.
 GoodGlobe(
   initialCenter: const LatLng(-8.84, 13.23), // Luanda
   initialZoom: 1.0,
-  atmosphere: true, // opt-in glow, off by default
+  atmosphere: false,
   points: const [
     GlobePoint(coordinate: LatLng(-8.84, 13.23), label: 'Luanda', color: Colors.white, radius: 6),
     GlobePoint(coordinate: LatLng(51.50, -0.13), label: 'London'),
