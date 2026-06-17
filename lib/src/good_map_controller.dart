@@ -33,6 +33,7 @@ class GoodMapController extends ChangeNotifier {
 
   // --- Camera -------------------------------------------------------------
 
+  /// Animates the camera to [target], optionally setting [zoom].
   Future<void> flyTo(LatLng target, {double? zoom}) async {
     final update = zoom == null
         ? CameraUpdate.newLatLng(target)
@@ -40,10 +41,12 @@ class GoodMapController extends ChangeNotifier {
     await _native.animateCamera(update);
   }
 
+  /// Animates the camera to a full [position] (target + zoom/bearing/tilt).
   Future<void> animateTo(CameraPosition position) async {
     await _native.animateCamera(CameraUpdate.newCameraPosition(position));
   }
 
+  /// Animates the camera to frame [bounds] with [padding].
   Future<void> fitBounds(
     LatLngBounds bounds, {
     EdgeInsets padding = const EdgeInsets.all(40),
@@ -59,6 +62,7 @@ class GoodMapController extends ChangeNotifier {
     );
   }
 
+  /// Moves the camera to [target] instantly (no animation), optionally [zoom].
   Future<void> moveTo(LatLng target, {double? zoom}) async {
     final update = zoom == null
         ? CameraUpdate.newLatLng(target)
@@ -71,6 +75,8 @@ class GoodMapController extends ChangeNotifier {
 
   // --- Markers ------------------------------------------------------------
 
+  /// Adds a marker and returns its [MarkerId]. Provide a `child` widget for an
+  /// interactive overlay marker, or an `image` for a static GL-scene symbol.
   MarkerId addMarker(MarkerOptions options) {
     final int id = _markers.add(options);
     if (options.image != null) {
@@ -79,6 +85,7 @@ class GoodMapController extends ChangeNotifier {
     return MarkerId(id);
   }
 
+  /// Replaces the options for an existing marker. Unknown [id] is a no-op.
   void updateMarker(MarkerId id, MarkerOptions options) {
     if (!_markers.items.containsKey(id.value)) return;
     _markers.update(id.value, options);
@@ -87,12 +94,14 @@ class GoodMapController extends ChangeNotifier {
     }
   }
 
+  /// Removes a marker. Unknown [id] is a no-op.
   void removeMarker(MarkerId id) {
     if (!_markers.items.containsKey(id.value)) return;
     _markers.remove(id.value);
     _disposeSymbol(id.value);
   }
 
+  /// Removes all markers.
   void clearMarkers() {
     for (final symbol in _symbols.values) {
       _native.removeSymbol(symbol);
@@ -156,12 +165,14 @@ class GoodMapController extends ChangeNotifier {
     return PolylineId(id);
   }
 
+  /// Removes a polyline. Unknown [id] is a no-op.
   void removePolyline(PolylineId id) {
     if (!_polylines.items.containsKey(id.value)) return;
     _polylines.remove(id.value);
     _disposeLine(id.value);
   }
 
+  /// Removes all polylines.
   void clearPolylines() {
     for (final line in _lines.values) {
       _native.removeLine(line);
@@ -189,6 +200,7 @@ class GoodMapController extends ChangeNotifier {
 
   // --- Popups -------------------------------------------------------------
 
+  /// Shows [child] anchored at [position] and returns its [PopupId].
   PopupId showPopup(
     LatLng position,
     Widget child, {
@@ -200,8 +212,10 @@ class GoodMapController extends ChangeNotifier {
     return PopupId(id);
   }
 
+  /// Hides a popup. Unknown [id] is a no-op.
   void hidePopup(PopupId id) => _popups.remove(id.value);
 
+  /// Removes all popups.
   void clearPopups() => _popups.clear();
 
   /// All overlay-widget entries (child-markers + popups) to be projected.

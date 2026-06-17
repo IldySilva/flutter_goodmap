@@ -25,7 +25,7 @@ class GoodGlobe extends StatefulWidget {
     this.onTap,
     this.onPointTap,
     super.key,
-    this.renderEnabled = true,
+    @visibleForTesting this.renderEnabled = true,
   });
 
   final LatLng initialCenter;
