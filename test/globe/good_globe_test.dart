@@ -9,7 +9,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: GoodGlobe(
         initialCenter: const LatLng(0, 0),
-        onCameraChanged: (c) => seen = c,
+        onCameraChanged: (c, z) => seen = c,
         renderEnabled: false,
       ),
     ));
@@ -25,7 +25,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: GoodGlobe(
         initialCenter: const LatLng(0, 0),
-        onCameraChanged: (c) => seen = c,
+        onCameraChanged: (c, z) => seen = c,
         renderEnabled: false,
       ),
     ));

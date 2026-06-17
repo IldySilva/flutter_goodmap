@@ -49,6 +49,20 @@ GoodGlobe(
 - **`GlobePoint`** — `coordinate`, `label`, `color`, `radius`.
 - **`GlobeArc`** — `from`, `to`, `color`, `width`, `dashed`, `bend`, `segments`.
 
+### Globe that zooms into streets (`GoodMapGlobe`)
+
+Use `GoodMapGlobe` instead of `GoodGlobe` for a globe that **cross-fades to the
+native flat map** (full vector streets/cities) once you pinch past a zoom
+threshold, and back out to the globe — same API plus `points`/`arcs`/`atmosphere`.
+
+```dart
+GoodMapGlobe(
+  initialCenter: const LatLng(-8.84, 13.23),
+  points: [...],
+  arcs: [...],
+)
+```
+
 ## Flat map (`GoodMap`)
 
 A themed slippy map with overlay markers/popups, polylines and zoom/compass

@@ -1,0 +1,112 @@
+import 'package:flutter/material.dart';
+import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
+
+import '../good_map.dart';
+import 'globe_overlays.dart';
+import 'good_globe.dart';
+
+/// A globe that becomes a street map when you zoom in.
+///
+/// Shows a [GoodGlobe] (world/regional view, with arcs + points) at low zoom,
+/// then cross-fades to the native [GoodMap] — full vector streets and cities —
+/// once you pinch past [globeZoomToFlat]. Zooming the flat map back out below
+/// [flatZoomToGlobe] returns to the globe. The centre coordinate carries across.
+class GoodMapGlobe extends StatefulWidget {
+  const GoodMapGlobe({
+    required this.initialCenter,
+    this.initialZoom = 1.0,
+    this.points = const [],
+    this.arcs = const [],
+    this.atmosphere = false,
+    this.controls = const GoodControls(),
+    this.globeZoomToFlat = 3.5,
+    this.flatZoomToGlobe = 4.0,
+    this.flatEntryZoom = 5.0,
+    this.globeEntryZoom = 3.0,
+    this.transition = const Duration(milliseconds: 280),
+    this.onTap,
+    this.onSurfaceChanged,
+    super.key,
+  });
+
+  final LatLng initialCenter;
+
+  /// Initial globe zoom (0 = far, ~6 = close).
+  final double initialZoom;
+
+  final List<GlobePoint> points;
+  final List<GlobeArc> arcs;
+  final bool atmosphere;
+  final GoodControls controls;
+
+  /// Globe zoom at which it hands off to the flat map.
+  final double globeZoomToFlat;
+
+  /// Flat-map zoom below which it hands back to the globe.
+  final double flatZoomToGlobe;
+
+  /// Flat-map zoom the map mounts at when entering from the globe.
+  final double flatEntryZoom;
+
+  /// Globe zoom the globe mounts at when returning from the flat map.
+  final double globeEntryZoom;
+
+  final Duration transition;
+
+  /// Tapped coordinate on the globe surface (globe mode only).
+  final void Function(LatLng? coordinate)? onTap;
+
+  /// Called when the surface flips (true = flat map, false = globe).
+  final void Function(bool isFlat)? onSurfaceChanged;
+
+  @override
+  State<GoodMapGlobe> createState() => _GoodMapGlobeState();
+}
+
+class _GoodMapGlobeState extends State<GoodMapGlobe> {
+  late LatLng _center = widget.initialCenter;
+  late double _globeStartZoom = widget.initialZoom;
+  bool _flat = false;
+
+  void _setFlat(bool flat) {
+    if (_flat == flat) return;
+    setState(() => _flat = flat);
+    widget.onSurfaceChanged?.call(flat);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget child = _flat
+        ? GoodMap(
+            key: const ValueKey('flat'),
+            initialCenter: _center,
+            initialZoom: widget.flatEntryZoom,
+            controls: widget.controls,
+            onCameraChanged: (pos) {
+              _center = pos.target;
+              if (pos.zoom < widget.flatZoomToGlobe) {
+                _globeStartZoom = widget.globeEntryZoom;
+                _setFlat(false);
+              }
+            },
+          )
+        : GoodGlobe(
+            key: const ValueKey('globe'),
+            initialCenter: _center,
+            initialZoom: _globeStartZoom,
+            points: widget.points,
+            arcs: widget.arcs,
+            atmosphere: widget.atmosphere,
+            onTap: widget.onTap,
+            onCameraChanged: (center, zoom) {
+              _center = center;
+              if (zoom >= widget.globeZoomToFlat) _setFlat(true);
+            },
+          );
+
+    return AnimatedSwitcher(
+      duration: widget.transition,
+      child: child,
+    );
+  }
+}

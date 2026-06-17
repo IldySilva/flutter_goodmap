@@ -45,7 +45,7 @@ class _GlobeDemoState extends State<GlobeDemo> {
     return Stack(
       children: [
         Positioned.fill(
-          child: GoodGlobe(
+          child: GoodMapGlobe(
             initialCenter: _luanda,
             initialZoom: 1.0,
             points: _points,

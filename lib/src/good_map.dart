@@ -23,7 +23,8 @@ typedef GoodMapBuilder = Widget Function({
 class GoodMap extends StatefulWidget {
   const GoodMap({
     required this.initialCenter,
-    required this.onMapReady,
+    this.onMapReady,
+    this.onCameraChanged,
     this.initialZoom = 11,
     this.controls = const GoodControls(),
     this.theme,
@@ -35,7 +36,10 @@ class GoodMap extends StatefulWidget {
   final double initialZoom;
   final GoodControls controls;
   final GoodMapTheme? theme;
-  final void Function(GoodMapController) onMapReady;
+  final void Function(GoodMapController)? onMapReady;
+
+  /// Called on camera moves with the current position (target + zoom).
+  final void Function(CameraPosition)? onCameraChanged;
   final GoodMapBuilder mapBuilder;
 
   @override
@@ -61,7 +65,7 @@ class _GoodMapState extends State<GoodMap> {
   void _onStyleLoaded() {
     if (!_readyCalled) {
       _readyCalled = true;
-      widget.onMapReady(_controller!);
+      widget.onMapReady?.call(_controller!);
     } else {
       // Theme changed mid-session: GL-scene objects (symbols + lines) must be
       // re-applied to the new style.
@@ -69,8 +73,10 @@ class _GoodMapState extends State<GoodMap> {
     }
   }
 
-  void _onCameraMove(CameraPosition _) =>
-      setState(() => _cameraVersion++);
+  void _onCameraMove(CameraPosition position) {
+    setState(() => _cameraVersion++);
+    widget.onCameraChanged?.call(position);
+  }
 
   @override
   void dispose() {

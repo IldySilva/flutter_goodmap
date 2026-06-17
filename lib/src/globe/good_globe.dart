@@ -43,8 +43,9 @@ class GoodGlobe extends StatefulWidget {
   /// Atmosphere colour; defaults to the theme's primary colour.
   final Color? atmosphereColor;
 
-  /// Called whenever the camera centre changes (drag/zoom/inertia).
-  final void Function(LatLng center)? onCameraChanged;
+  /// Called whenever the camera changes (drag/zoom/inertia), with the new
+  /// centre and zoom.
+  final void Function(LatLng center, double zoom)? onCameraChanged;
 
   /// Called with the geographic coordinate under a tap, or null off-globe.
   final void Function(LatLng? coordinate)? onTap;
@@ -158,7 +159,7 @@ class _GoodGlobeState extends State<GoodGlobe>
         _zoom = (_baseZoom + math.log(d.scale) / math.ln2).clamp(0.0, 6.0);
       }
     });
-    widget.onCameraChanged?.call(_center);
+    widget.onCameraChanged?.call(_center, _zoom);
   }
 
   void _onScaleEnd(ScaleEndDetails d) {
@@ -187,7 +188,7 @@ class _GoodGlobeState extends State<GoodGlobe>
     _angVelX *= decay;
 
     setState(() {});
-    widget.onCameraChanged?.call(_center);
+    widget.onCameraChanged?.call(_center, _zoom);
 
     if (_angVelX.abs() < 0.01 && _angVelZ.abs() < 0.01) _stopInertia();
   }

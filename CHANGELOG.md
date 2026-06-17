@@ -20,3 +20,8 @@ Initial release. Two map surfaces, inspired by mapcn.
 - `GlobePoint` (dot + label) and `GlobeArc` (great-circle, bowed, animated
   marching dashes) with back-of-globe occlusion; tap a point for a popup.
 - Opt-in atmosphere glow (`atmosphere: true`).
+
+### Hybrid — `GoodMapGlobe`
+- A globe that becomes a street map: shows `GoodGlobe` at world/regional zoom,
+  then cross-fades to the native `GoodMap` (full vector streets/cities) past a
+  zoom threshold, and back. The centre coordinate carries across.
