@@ -26,6 +26,9 @@ void main() {
       ),
     ];
 
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(MaterialApp(
       home: Stack(children: [
         GoodOverlayLayer(native: native, entries: entries, cameraVersion: 0),
@@ -37,6 +40,7 @@ void main() {
     expect(pos.dx, moreOrLessEquals(120, epsilon: 0.5));
     expect(pos.dy, moreOrLessEquals(240, epsilon: 0.5));
   });
+
 
   testWidgets('invokes onTap when the overlay child is tapped', (tester) async {
     final native = MockMapLibreMapController();

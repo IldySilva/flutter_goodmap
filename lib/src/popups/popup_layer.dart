@@ -1,5 +1,6 @@
 // lib/src/popups/popup_layer.dart
 import 'dart:math';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
@@ -27,10 +28,11 @@ class GoodOverlayLayer extends StatefulWidget {
 
 class _GoodOverlayLayerState extends State<GoodOverlayLayer> {
   Map<Object, Offset> _offsets = <Object, Offset>{};
+  int _reprojectToken = 0;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _reproject();
   }
 
@@ -44,12 +46,25 @@ class _GoodOverlayLayerState extends State<GoodOverlayLayer> {
   }
 
   Future<void> _reproject() async {
+    final token = ++_reprojectToken;
+    // `toScreenLocation` returns physical pixels on Android but logical points
+    // on iOS; `Positioned` is logical, so scale Android down by the DPR.
+    final divisor = defaultTargetPlatform == TargetPlatform.android
+        ? MediaQuery.of(context).devicePixelRatio
+        : 1.0;
+    final entries = widget.entries;
     final next = <Object, Offset>{};
-    for (final e in widget.entries) {
-      final Point<num> p = await widget.native.toScreenLocation(e.position);
-      next[e.key] = Offset(p.x.toDouble(), p.y.toDouble());
+    for (final e in entries) {
+      try {
+        final Point<num> p = await widget.native.toScreenLocation(e.position);
+        next[e.key] = Offset(p.x.toDouble() / divisor, p.y.toDouble() / divisor);
+      } catch (_) {
+        // Projection can fail transiently mid-gesture; skip this entry.
+      }
     }
-    if (mounted) setState(() => _offsets = next);
+    // Drop the result if a newer reprojection started while we awaited.
+    if (!mounted || token != _reprojectToken) return;
+    setState(() => _offsets = next);
   }
 
   // Fraction of child size to shift so [alignment] sits on the screen offset.
