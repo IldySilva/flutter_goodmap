@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -10,12 +11,16 @@ import 'mercator.dart';
 /// Builds a single equirectangular [ui.Image] atlas for the globe by fetching
 /// CARTO raster tiles and reprojecting them from Web-Mercator to equirectangular
 /// on the CPU. Theme-aware (light/dark). Runs once per (brightness, zoom).
+///
+/// v1 fetches the whole world at [tileZoom] (z4 = 256 tiles) into a single
+/// atlas. Zoom-in detail is therefore capped by [width]/[height]; true
+/// per-region LOD is a 0.2.0 feature (windowed high-res atlas).
 class TileAtlas {
   TileAtlas({
     required this.brightness,
-    this.tileZoom = 2,
-    this.width = 1024,
-    this.height = 512,
+    this.tileZoom = 4,
+    this.width = 2048,
+    this.height = 1024,
   });
 
   final Brightness brightness;
@@ -35,14 +40,22 @@ class TileAtlas {
     final mosaic = Uint8List(mosaicSize * mosaicSize * 4);
 
     var anyTile = false;
-    await Future.wait([
-      for (final tile in worldTiles(tileZoom))
-        _fetchTile(tile).then((px) {
-          if (px == null) return;
-          anyTile = true;
-          _blitTile(mosaic, mosaicSize, tile, px);
-        }),
-    ]);
+    // Fetch in bounded-concurrency batches so z4 (256 tiles) doesn't open
+    // hundreds of sockets at once.
+    const concurrency = 16;
+    final tiles = worldTiles(tileZoom);
+    for (var i = 0; i < tiles.length; i += concurrency) {
+      if (_disposed) return null;
+      final batch = tiles.sublist(i, math.min(i + concurrency, tiles.length));
+      await Future.wait([
+        for (final tile in batch)
+          _fetchTile(tile).then((px) {
+            if (px == null) return;
+            anyTile = true;
+            _blitTile(mosaic, mosaicSize, tile, px);
+          }),
+      ]);
+    }
     if (_disposed || !anyTile) return null;
 
     // The ~500k-pixel reprojection runs in a background isolate so it never
