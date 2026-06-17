@@ -1,7 +1,15 @@
 # goodmap
 
-Theme-aware, ready-to-use Flutter map components built on
-[`maplibre_gl`](https://pub.dev/packages/maplibre_gl). iOS and Android.
+Cool, beautiful, ready-to-use map components for Flutter — inspired by
+[mapcn](https://mapcn.dev). Two drop-in surfaces: a themed **flat map** built on
+native MapLibre, and a **3D globe** with points, labels and animated
+great-circle arcs.
+
+- 🎨 **Theme-aware** — follows your app's light/dark `Theme` (CARTO basemaps).
+- 🧩 **Ready to use** — small, predictable, controller-based API.
+- 🌍 **Native globe** — a real spinning globe with **no `flutter_gpu`**, rendered
+  in a single `ui.FragmentProgram` (works on iOS, Android, web, desktop).
+- 🪶 **Pure-Dart core** — projection, tiling and occlusion are plain, tested Dart.
 
 ## Install
 
@@ -10,21 +18,50 @@ dependencies:
   goodmap: ^0.1.0
 ```
 
-## Platform setup
-
-`maplibre_gl` requires iOS 13+ and Android `minSdkVersion 21`.
-
-## Usage
-
 ```dart
 import 'package:goodmap/goodmap.dart';
+```
 
+The flat map uses `maplibre_gl`, which requires **iOS 13+** and Android
+**`minSdkVersion 21`**.
+
+## Globe (`GoodGlobe`)
+
+A minimalist, theme-aware globe with inertial drag-rotate, pinch-zoom, points +
+labels, and animated dashed arcs — back-of-globe overlays hide automatically.
+
+```dart
+GoodGlobe(
+  initialCenter: const LatLng(-8.84, 13.23), // Luanda
+  initialZoom: 1.0,
+  atmosphere: true, // opt-in glow, off by default
+  points: const [
+    GlobePoint(coordinate: LatLng(-8.84, 13.23), label: 'Luanda', color: Colors.white, radius: 6),
+    GlobePoint(coordinate: LatLng(51.50, -0.13), label: 'London'),
+  ],
+  arcs: const [
+    GlobeArc(from: LatLng(-8.84, 13.23), to: LatLng(51.50, -0.13)),
+  ],
+  onTap: (latLng) { /* tap → coordinate */ },
+)
+```
+
+- **`GoodGlobe`** — `points`, `arcs`, `atmosphere`, `onTap`, `onPointTap`.
+- **`GlobePoint`** — `coordinate`, `label`, `color`, `radius`.
+- **`GlobeArc`** — `from`, `to`, `color`, `width`, `dashed`, `bend`, `segments`.
+
+## Flat map (`GoodMap`)
+
+A themed slippy map with overlay markers/popups, polylines and zoom/compass
+controls, driven by a `GoodMapController`.
+
+```dart
 GoodMap(
   initialCenter: const LatLng(37.77, -122.42),
   initialZoom: 11,
   controls: const GoodControls(zoom: true, compass: true),
   onMapReady: (c) {
-    final id = c.addMarker(MarkerOptions(
+    c.addMarker(MarkerOptions(
       position: const LatLng(37.77, -122.42),
       child: const Icon(Icons.location_on),
       onTap: () => c.showPopup(
@@ -36,19 +73,18 @@ GoodMap(
 )
 ```
 
-The basemap follows `Theme.of(context).brightness` (CARTO positron / dark-matter).
-
-## Controller API
-
+`GoodMapController`:
 - **Camera:** `flyTo`, `animateTo`, `fitBounds`, `moveTo`
 - **Markers:** `addMarker`, `updateMarker`, `removeMarker`, `clearMarkers`
 - **Popups:** `showPopup`, `hidePopup`, `clearPopups`
+- **Polylines:** `addPolyline`, `removePolyline`, `clearPolylines`
+
+Both surfaces follow `Theme.of(context).brightness` (CARTO positron / dark-matter).
 
 ## Basemap terms
 
-The example app uses CARTO's public basemap styles. Review CARTO's terms before
-production use and supply your own style URL via a custom `GoodMapTheme`/basemap
-if required.
+goodmap uses CARTO's public basemap tiles. Review CARTO's and OpenStreetMap's
+terms before production use, and supply your own style/tiles if required.
 
 ## License
 

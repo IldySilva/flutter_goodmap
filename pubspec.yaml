@@ -1,7 +1,18 @@
 name: goodmap
-description: Theme-aware, ready-to-use Flutter map components built on maplibre_gl.
+description: >-
+  Beautiful, theme-aware Flutter map components — a native MapLibre flat map and
+  a 3D globe with points, labels and animated great-circle arcs. Inspired by mapcn.
 version: 0.1.0
 repository: https://github.com/ildysilva/goodmap
+homepage: https://github.com/ildysilva/goodmap
+issue_tracker: https://github.com/ildysilva/goodmap/issues
+
+topics:
+  - map
+  - maps
+  - globe
+  - maplibre
+  - geo
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -11,7 +22,6 @@ dependencies:
   flutter:
     sdk: flutter
   maplibre_gl: ^0.26.1
-  vector_math: ^2.1.4
 
 dev_dependencies:
   flutter_test:
