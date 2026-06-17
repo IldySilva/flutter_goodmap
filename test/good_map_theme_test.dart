@@ -1,4 +1,4 @@
-// test/mapcn_theme_test.dart
+// test/good_map_theme_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goodmap/src/theme/good_map_theme.dart';

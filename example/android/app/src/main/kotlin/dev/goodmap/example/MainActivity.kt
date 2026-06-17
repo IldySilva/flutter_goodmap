@@ -1,4 +1,4 @@
-package dev.mapcn.example
+package dev.goodmap.example
 
 import io.flutter.embedding.android.FlutterActivity
 

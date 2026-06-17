@@ -1,4 +1,4 @@
-// test/mapcn_map_test.dart
+// test/good_map_test.dart
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -31,8 +31,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(ready, isNotNull);
-    expect(find.byKey(const ValueKey('mapcn_zoom_in')), findsOneWidget);
-    expect(find.byKey(const ValueKey('mapcn_compass')), findsOneWidget);
+    expect(find.byKey(const ValueKey('goodmap_zoom_in')), findsOneWidget);
+    expect(find.byKey(const ValueKey('goodmap_compass')), findsOneWidget);
   });
 
   testWidgets('selects positron in light mode', (tester) async {

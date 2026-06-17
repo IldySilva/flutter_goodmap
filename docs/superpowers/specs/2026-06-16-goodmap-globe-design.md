@@ -1,13 +1,13 @@
-# MapcnGlobe — Native 3D Globe for mapcn_flutter — Design
+# GoodGlobe — Native 3D Globe for goodmap — Design
 
 **Date:** 2026-06-16
 **Status:** Approved for planning
 **Author:** ildysilva
-**Project location:** `~/labs/mapcn_flutter` (new surface in the existing package)
+**Project location:** `~/labs/goodmap` (new surface in the existing package)
 
 ## Summary
 
-A native, from-scratch 3D **globe** widget (`MapcnGlobe`) for the mapcn_flutter
+A native, from-scratch 3D **globe** widget (`GoodGlobe`) for the goodmap
 package, rendering a real raster-tiled Earth on a sphere on **iOS and Android** —
 with theme-aware basemaps, markers, popups, and great-circle **arcs** projected
 onto the globe. This is the package's differentiator: a native mobile globe that
@@ -15,7 +15,7 @@ neither `maplibre_gl` (native MapLibre has no globe — see
 [#3161](https://github.com/maplibre/maplibre-native/issues/3161)) nor Google Maps
 Flutter offers today.
 
-The original mapcn.dev gets a globe "for free" via a one-line
+The original goodmap.dev gets a globe "for free" via a one-line
 `projection={{type:"globe"}}` in **MapLibre GL JS (web)**. That toggle does not
 exist in the native iOS/Android engine. So we build our own scoped globe renderer
 rather than depend on Mapbox or a web view.
@@ -26,7 +26,7 @@ rather than depend on Mapbox or a web view.
   no third-party map SDK, no web view).
 - Theme-aware (light/dark) raster basemap matching the package's
   positron/dark-matter identity.
-- Reuse mapcn's existing vocabulary: same `MarkerOptions`/`PopupOptions`, same
+- Reuse goodmap's existing vocabulary: same `MarkerOptions`/`PopupOptions`, same
   camera verbs, plus arcs.
 - Keep the hard correctness (projection, tiling, occlusion math) in pure Dart so
   it is unit-testable without a GPU.
@@ -35,11 +35,11 @@ rather than depend on Mapbox or a web view.
 
 - Full **vector** tiles on the sphere (roads/labels/fills re-rendered in 3D) —
   that is effectively reimplementing a vector renderer; raster only for v1.
-- A continuous globe↔flat **morph** or hybrid handoff to `MapcnMap`. v1 is a
+- A continuous globe↔flat **morph** or hybrid handoff to `GoodMap`. v1 is a
   standalone globe that stays a globe at all zooms.
 - Deep per-tile street-level LOD (Approach B below) — v2.
 - Web/desktop. v1 targets iOS + Android, same as the flat map.
-- Replacing `MapcnMap` — the globe is an additive sibling surface.
+- Replacing `GoodMap` — the globe is an additive sibling surface.
 
 ## Key Decisions
 
@@ -50,19 +50,19 @@ rather than depend on Mapbox or a web view.
 | Tile→sphere | **Approach A**: UV sphere + one evolving **equirectangular** atlas | One mesh, one texture, trivial lat/lng UV math shared by tiles and overlays; poles covered. |
 | Mercator→equirect | GPU render-to-texture blit with a vertical-remap shader | Web tiles are Mercator; the atlas is equirectangular. Reprojection isolated to one shader. |
 | Zoom scope | **Standalone** globe (rotate/zoom/tilt/tap), no flat handoff | One renderer; simplest shippable scope. |
-| Overlays | Flutter widgets in an overlay `Stack` (reuse `MapcnOverlayLayer` idea) | Crisp, tappable, theme-styled; consistent with the package philosophy. |
-| Integration | New `MapcnGlobe` widget + `MapcnGlobeController`, additive | Can't reuse the native MapLibre PlatformView; mirrors `MapcnMap` so devs feel at home. |
+| Overlays | Flutter widgets in an overlay `Stack` (reuse `GoodOverlayLayer` idea) | Crisp, tappable, theme-styled; consistent with the package philosophy. |
+| Integration | New `GoodGlobe` widget + `GoodGlobeController`, additive | Can't reuse the native MapLibre PlatformView; mirrors `GoodMap` so devs feel at home. |
 
 ## Architecture
 
-`MapcnGlobe` is a `StatefulWidget` rendering a `Stack`, mirroring `MapcnMap`:
+`GoodGlobe` is a `StatefulWidget` rendering a `Stack`, mirroring `GoodMap`:
 
 1. **Bottom — GPU globe:** a `flutter_gpu` render of the textured sphere +
    atmosphere, driven by a `Ticker` render loop (renders only when dirty/animating).
 2. **Middle — overlay layer:** projects lat/lng → 3D sphere → screen (the globe's
    analog of `toScreenLocation`), positions marker/popup widgets and paints arcs,
    with back-of-globe occlusion.
-3. **Top — controls:** reuse `MapcnControlsView` (zoom ±, compass/reset-north).
+3. **Top — controls:** reuse `GoodControlsView` (zoom ±, compass/reset-north).
 
 Two internal subsystems with narrow interfaces:
 
@@ -74,14 +74,14 @@ Two internal subsystems with narrow interfaces:
   raster tiles into the equirectangular texture; exposes "current texture" +
   "mark region dirty for this visible area/zoom."
 
-`MapcnGlobeController` mirrors `MapcnController` and is handed to `onGlobeReady`.
+`GoodGlobeController` mirrors `GoodMapController` and is handed to `onGlobeReady`.
 
 ### File structure (additive)
 
 ```
 lib/src/globe/
-  mapcn_globe.dart          # MapcnGlobe widget (Stack: renderer + overlay + controls)
-  globe_controller.dart     # MapcnGlobeController (camera, markers, popups, arcs)
+  goodmap_globe.dart          # GoodGlobe widget (Stack: renderer + overlay + controls)
+  globe_controller.dart     # GoodGlobeController (camera, markers, popups, arcs)
   globe_camera.dart         # GlobeCamera state + viewProjection matrix
   sphere_math.dart          # latLngToUnitSphere, projection, occlusion, great-circle slerp
   globe_renderer.dart       # GlobeRenderer (flutter_gpu: mesh, draw loop, atmosphere) [device]
@@ -184,18 +184,18 @@ Hover/tap = hit-test against a widened invisible stroke. Arcs use the same
 ## Public API
 
 ```dart
-MapcnGlobe(
+GoodGlobe(
   initialCenter: LatLng(20, 0),
   initialZoom: 2,
-  controls: const MapcnControls(zoom: true, compass: true),
+  controls: const GoodControls(zoom: true, compass: true),
   theme: null,                       // null => derived from Theme.of(context)
   options: const GlobeOptions(atmosphere: true, autoSpin: true, autoSpinSpeed: 0.02),
   onTap: (LatLng p) { },
-  onGlobeReady: (MapcnGlobeController c) { },
+  onGlobeReady: (GoodGlobeController c) { },
 )
 ```
 
-`MapcnGlobeController`:
+`GoodGlobeController`:
 
 ```dart
 // Camera
@@ -214,13 +214,13 @@ void removeArc(ArcId);  void clearArcs();
 void startSpin();  void stopSpin();
 ```
 
-**New public types:** `MapcnGlobe`, `MapcnGlobeController`, `GlobeOptions`,
+**New public types:** `GoodGlobe`, `GoodGlobeController`, `GlobeOptions`,
 `GlobeCamera`, `ArcId`, `ArcOptions`.
 **Reused unchanged:** `MarkerOptions`, `PopupOptions`, `MarkerId`, `PopupId`,
-`MapcnControls`, `MapcnTheme`, `LatLng`.
+`GoodControls`, `GoodMapTheme`, `LatLng`.
 Atmosphere color defaults from `ColorScheme`, overridable in `GlobeOptions`.
 Everything is **additive** — the existing flat-map API and package are untouched.
-Arcs are globe-first but typed so the flat `MapcnController` can later gain the same
+Arcs are globe-first but typed so the flat `GoodMapController` can later gain the same
 `addArc` (great-circle polyline) with no rework.
 
 ## Error handling
@@ -241,7 +241,7 @@ Arcs are globe-first but typed so the flat `MapcnController` can later gain the 
 - **`flutter_gpu` is experimental** → API churn. Mitigation: pin the Flutter
   version; quarantine all GPU calls behind `GlobeRenderer`.
 - **Impeller required** → non-Vulkan older Android unsupported. Mitigation:
-  capability gate + documented minimums; flat `MapcnMap` remains universal.
+  capability gate + documented minimums; flat `GoodMap` remains universal.
 - **Mercator→equirect seams/precision** (MapLibre's own single-pixel-seam warning) —
   contained to the atlas blit shader; tested in isolation.
 - **Scope** — multi-week. Hence phasing with a hard go/no-go gate after the spike.
@@ -251,7 +251,7 @@ Arcs are globe-first but typed so the flat `MapcnController` can later gain the 
 - **Unit (no GPU, the bulk):** `latLngToUnitSphere`; camera `viewProjection`;
   overlay projection + occlusion; arc great-circle sampling + occlusion; tile-cover
   selection; Mercator↔equirect remap; registry semantics.
-- **Widget:** `MapcnGlobe` builds the Stack + controls; overlay positions a marker at
+- **Widget:** `GoodGlobe` builds the Stack + controls; overlay positions a marker at
   a mocked projection; arc painter yields the expected `Path` (`PathMetrics`).
   `GlobeRenderer`/`TileAtlas` mocked.
 - **Manual/example:** a globe screen (city arcs, markers, theme toggle, auto-spin) on
@@ -264,7 +264,7 @@ Arcs are globe-first but typed so the flat `MapcnController` can later gain the 
 - **Phase 1 — TileAtlas:** cover selection, fetch/decode, Mercator→equirect
   reprojection + composite, light/dark, distance-based LOD.
 - **Phase 2 — Overlays:** markers/popups projection + occlusion + tap, controls,
-  `MapcnGlobeController`.
+  `GoodGlobeController`.
 - **Phase 3 — Arcs:** great-circle sampling + occlusion + hover/tap.
 - **Phase 4 — Polish:** atmosphere shader, auto-spin, attribution, example app screen.
 

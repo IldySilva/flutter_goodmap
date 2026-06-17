@@ -27,20 +27,20 @@ void main() {
 
   testWidgets('zoom in/out buttons call animateCamera', (tester) async {
     await pump(tester, const GoodControls(zoom: true, compass: false));
-    await tester.tap(find.byKey(const ValueKey('mapcn_zoom_in')));
-    await tester.tap(find.byKey(const ValueKey('mapcn_zoom_out')));
+    await tester.tap(find.byKey(const ValueKey('goodmap_zoom_in')));
+    await tester.tap(find.byKey(const ValueKey('goodmap_zoom_out')));
     verify(() => native.animateCamera(any())).called(2);
   });
 
   testWidgets('compass button resets bearing', (tester) async {
     await pump(tester, const GoodControls(zoom: false, compass: true));
-    await tester.tap(find.byKey(const ValueKey('mapcn_compass')));
+    await tester.tap(find.byKey(const ValueKey('goodmap_compass')));
     verify(() => native.animateCamera(any())).called(1);
   });
 
   testWidgets('hidden controls are not rendered', (tester) async {
     await pump(tester, const GoodControls(zoom: false, compass: false));
-    expect(find.byKey(const ValueKey('mapcn_zoom_in')), findsNothing);
-    expect(find.byKey(const ValueKey('mapcn_compass')), findsNothing);
+    expect(find.byKey(const ValueKey('goodmap_zoom_in')), findsNothing);
+    expect(find.byKey(const ValueKey('goodmap_compass')), findsNothing);
   });
 }

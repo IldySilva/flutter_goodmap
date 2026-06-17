@@ -1,4 +1,4 @@
-# mapcn_flutter
+# goodmap
 
 Theme-aware, ready-to-use Flutter map components built on
 [`maplibre_gl`](https://pub.dev/packages/maplibre_gl). iOS and Android.
@@ -7,7 +7,7 @@ Theme-aware, ready-to-use Flutter map components built on
 
 ```yaml
 dependencies:
-  mapcn_flutter: ^0.1.0
+  goodmap: ^0.1.0
 ```
 
 ## Platform setup
@@ -17,12 +17,12 @@ dependencies:
 ## Usage
 
 ```dart
-import 'package:mapcn_flutter/mapcn.dart';
+import 'package:goodmap/goodmap.dart';
 
-MapcnMap(
+GoodMap(
   initialCenter: const LatLng(37.77, -122.42),
   initialZoom: 11,
-  controls: const MapcnControls(zoom: true, compass: true),
+  controls: const GoodControls(zoom: true, compass: true),
   onMapReady: (c) {
     final id = c.addMarker(MarkerOptions(
       position: const LatLng(37.77, -122.42),
@@ -47,7 +47,7 @@ The basemap follows `Theme.of(context).brightness` (CARTO positron / dark-matter
 ## Basemap terms
 
 The example app uses CARTO's public basemap styles. Review CARTO's terms before
-production use and supply your own style URL via a custom `MapcnTheme`/basemap
+production use and supply your own style URL via a custom `GoodMapTheme`/basemap
 if required.
 
 ## License

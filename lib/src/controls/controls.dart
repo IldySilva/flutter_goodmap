@@ -37,13 +37,13 @@ class GoodControlsView extends StatelessWidget {
           children: [
           if (config.zoom) ...[
             _button(
-              key: const ValueKey('mapcn_zoom_in'),
+              key: const ValueKey('goodmap_zoom_in'),
               icon: Icons.add,
               onTap: () => native.animateCamera(CameraUpdate.zoomIn()),
             ),
             const SizedBox(height: 8),
             _button(
-              key: const ValueKey('mapcn_zoom_out'),
+              key: const ValueKey('goodmap_zoom_out'),
               icon: Icons.remove,
               onTap: () => native.animateCamera(CameraUpdate.zoomOut()),
             ),
@@ -51,7 +51,7 @@ class GoodControlsView extends StatelessWidget {
           if (config.zoom && config.compass) const SizedBox(height: 8),
           if (config.compass)
             _button(
-              key: const ValueKey('mapcn_compass'),
+              key: const ValueKey('goodmap_compass'),
               icon: Icons.explore_outlined,
               onTap: () => native.animateCamera(CameraUpdate.bearingTo(0)),
             ),

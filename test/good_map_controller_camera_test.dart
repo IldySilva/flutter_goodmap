@@ -1,4 +1,4 @@
-// test/mapcn_controller_camera_test.dart
+// test/good_map_controller_camera_test.dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:goodmap/src/good_map_controller.dart';

@@ -1,20 +1,20 @@
-# mapcn for Flutter — v1 Design
+# goodmap for Flutter — v1 Design
 
 **Date:** 2026-06-16
 **Status:** Approved for planning
 **Author:** ildysilva
-**Project location:** `~/labs/mapcn_flutter` (new standalone repo)
+**Project location:** `~/labs/goodmap` (new standalone repo)
 
 ## Summary
 
-A Flutter port of [mapcn](https://mapcn.dev) — theme-aware, ready-to-use map
+A Flutter port of [goodmap](https://goodmap.dev) — theme-aware, ready-to-use map
 components — distributed as a normal **pub.dev package** built on top of the
 `maplibre_gl` plugin. v1 targets a small, solid core: a themed map widget, a
 controller for camera and markers, overlay-based popups, and zoom + compass
 controls. iOS and Android only.
 
 This is a **new, standalone project** — a separate package, not part of the
-existing Next.js docs/registry repo. The original mapcn repo is a React/shadcn
+existing Next.js docs/registry repo. The original goodmap repo is a React/shadcn
 registry; this design borrows its component vocabulary and theme-aware
 philosophy, not its distribution model (Flutter uses pub.dev packages, not a
 copy-paste registry).
@@ -24,7 +24,7 @@ copy-paste registry).
 - Idiomatic Flutter package usable via `flutter pub add` + `import`.
 - Theme-aware: map basemap and component styling follow the host app's
   light/dark `Theme`.
-- Mirror mapcn's component vocabulary where it makes sense on native mobile.
+- Mirror goodmap's component vocabulary where it makes sense on native mobile.
 - Clean, predictable, controller-based API over `maplibre_gl`.
 
 ## Non-Goals (v1)
@@ -41,10 +41,10 @@ copy-paste registry).
 | Decision | Choice | Rationale |
 |---|---|---|
 | Distribution | pub.dev package | Idiomatic Flutter; easiest adoption. |
-| Map engine | `maplibre_gl` | Only option with native vector-tile + GL style-layer parity to mapcn. |
+| Map engine | `maplibre_gl` | Only option with native vector-tile + GL style-layer parity to goodmap. |
 | v1 scope | Core only: Map, Marker, Popup, Controls, theming | Proves the foundation (theming + imperative bridge) before porting everything. |
 | Platforms | iOS + Android | `maplibre_gl`'s native sweet spot; no platform caveats in v1. |
-| API style | Controller-based (thin wrapper) | `MapcnController` exposes typed methods; less to build, predictable. |
+| API style | Controller-based (thin wrapper) | `GoodMapController` exposes typed methods; less to build, predictable. |
 | Popups | Flutter overlay widgets | The standard, native-quality way; full Flutter widget freedom. No fork. |
 | Markers | Overlay widgets by default; optional widget-to-image | Overlay = interactive/stateful; widget-to-image = baked into GL scene (static). |
 | Controls | zoom + compass/reset-bearing | Fullscreen is meaningless on mobile; locate needs `geolocator` + permissions (deferred). |
@@ -66,14 +66,14 @@ is the standard native-quality solution used across `google_maps_flutter`,
 Standard pub.dev package layout:
 
 ```
-mapcn_flutter/
+goodmap/
 ├── lib/
-│   ├── mapcn.dart                  # public exports
+│   ├── goodmap.dart                  # public exports
 │   └── src/
-│       ├── mapcn_map.dart          # MapcnMap widget (MapLibreMap + overlay Stack)
-│       ├── mapcn_controller.dart   # MapcnController (wraps MapLibreMapController)
+│       ├── goodmap_map.dart          # GoodMap widget (MapLibreMap + overlay Stack)
+│       ├── goodmap_controller.dart   # GoodMapController (wraps MapLibreMapController)
 │       ├── theme/
-│       │   ├── mapcn_theme.dart     # MapcnTheme tokens (light/dark)
+│       │   ├── goodmap_theme.dart     # GoodMapTheme tokens (light/dark)
 │       │   └── basemaps.dart        # CARTO positron / dark-matter style URLs
 │       ├── markers/
 │       │   ├── marker.dart          # MarkerOptions, MarkerId
@@ -81,7 +81,7 @@ mapcn_flutter/
 │       ├── popups/
 │       │   └── popup_layer.dart      # overlay layer, LatLng→screen projection
 │       └── controls/
-│           └── controls.dart         # MapcnControls (zoom, compass)
+│           └── controls.dart         # GoodControls (zoom, compass)
 ├── example/                          # runnable demo app (iOS + Android)
 ├── pubspec.yaml
 └── README.md
@@ -89,17 +89,17 @@ mapcn_flutter/
 
 ### Component boundaries
 
-- **`MapcnMap`** — `StatefulWidget` rendering a `Stack`:
+- **`GoodMap`** — `StatefulWidget` rendering a `Stack`:
   1. `MapLibreMap` (native view) at the bottom, with the theme-selected style.
   2. **Popup overlay layer** above it.
   3. **Controls layer** on top.
-  On style load it constructs a `MapcnController` and invokes `onMapReady`.
+  On style load it constructs a `GoodMapController` and invokes `onMapReady`.
   Listens to camera changes to drive overlay re-projection.
 
-- **`MapcnController`** — wraps `MapLibreMapController`. Single point of
+- **`GoodMapController`** — wraps `MapLibreMapController`. Single point of
   imperative interaction. Owns marker registry and popup registry.
 
-- **`MapcnTheme`** — pure data: derives marker/popup/control token defaults from
+- **`GoodMapTheme`** — pure data: derives marker/popup/control token defaults from
   the host `ColorScheme`; overridable. No widgets.
 
 - **`popup_layer.dart`** — given a list of `(LatLng, Widget)` entries, projects
@@ -110,15 +110,15 @@ mapcn_flutter/
 ## Public API
 
 ```dart
-MapcnMap(
+GoodMap(
   initialCenter: LatLng(37.77, -122.42),
   initialZoom: 11,
-  controls: const MapcnControls(zoom: true, compass: true),
-  onMapReady: (MapcnController c) { /* add markers, popups */ },
+  controls: const GoodControls(zoom: true, compass: true),
+  onMapReady: (GoodMapController c) { /* add markers, popups */ },
 )
 ```
 
-`MapcnController`:
+`GoodMapController`:
 
 - **Camera:** `flyTo`, `animateTo`, `fitBounds`, `moveTo`
 - **Markers:** `addMarker(MarkerOptions) -> MarkerId`, `updateMarker(MarkerId, ...)`,
@@ -134,15 +134,15 @@ MapcnMap(
 
 ## Theming
 
-`MapcnMap` reads `Theme.of(context).brightness` and selects the CARTO **positron**
-(light) or **dark-matter** (dark) vector basemap style. `MapcnTheme` derives
+`GoodMap` reads `Theme.of(context).brightness` and selects the CARTO **positron**
+(light) or **dark-matter** (dark) vector basemap style. `GoodMapTheme` derives
 marker color, popup background/border/radius, and control button colors from the
 app's `ColorScheme`, all overridable. On host theme toggle, the map re-applies
 the matching style and overlay tokens update.
 
 ## Error Handling
 
-- **Pre-ready calls:** `MapcnController` is only handed to `onMapReady` after the
+- **Pre-ready calls:** `GoodMapController` is only handed to `onMapReady` after the
   style loads, so methods cannot be called before the controller exists.
 - **Unknown ids:** `updateMarker`/`removeMarker`/`hidePopup` with an unknown id
   are no-ops (no throw) — safe for async UI churn.
@@ -154,10 +154,10 @@ the matching style and overlay tokens update.
 
 ## Testing
 
-- **Unit (no native map):** `MapcnTheme` token derivation; marker/popup registry
+- **Unit (no native map):** `GoodMapTheme` token derivation; marker/popup registry
   add/update/remove/clear semantics including unknown-id no-ops; basemap URL
   selection per brightness.
-- **Widget:** `MapcnMap` builds the Stack with controls; popup overlay positions
+- **Widget:** `GoodMap` builds the Stack with controls; popup overlay positions
   a widget at a mocked screen offset; controls invoke the right controller
   methods. `MapLibreMapController` is mocked — native rendering is out of scope
   for automated tests.
@@ -166,6 +166,6 @@ the matching style and overlay tokens update.
 
 ## Open Items for Planning
 
-- Confirm package name on pub.dev (`mapcn` vs `mapcn_flutter`); directory is
-  `mapcn_flutter` regardless.
+- Confirm package name on pub.dev (`goodmap` vs `goodmap`); directory is
+  `goodmap` regardless.
 - Pin `maplibre_gl` version and confirm CARTO basemap terms for the example app.
