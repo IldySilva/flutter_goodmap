@@ -5,11 +5,10 @@ Cool, beautiful, ready-to-use map components for Flutter — inspired by
 native MapLibre, and a **3D globe** with points, labels and animated
 great-circle arcs.
 
-- 🎨 **Theme-aware** — follows your app's light/dark `Theme` (CARTO basemaps).
-- 🧩 **Ready to use** — small, predictable, controller-based API.
-- 🌍 **Native globe** — a real spinning globe with **no `flutter_gpu`**, rendered
+- **Theme-aware** — follows your app's light/dark `Theme` (CARTO basemaps).
+-  **Ready to use** — small, predictable, controller-based API.
+- **Native globe** — a real spinning globe with **no `flutter_gpu`**, rendered
   in a single `ui.FragmentProgram` (works on iOS, Android, web, desktop).
-- 🪶 **Pure-Dart core** — projection, tiling and occlusion are plain, tested Dart.
 
 ## Install
 
