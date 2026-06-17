@@ -1,5 +1,7 @@
 # goodmap
 
+![GoodMap — beautiful map components for Flutter](screenshots/docbanner.jpg)
+
 Cool, beautiful, ready-to-use map components for Flutter — inspired by
 [mapcn](https://mapcn.dev). Two drop-in surfaces: a themed **flat map** built on
 native MapLibre, and a **3D globe** with points, labels and animated
@@ -25,6 +27,8 @@ The flat map uses `maplibre_gl`, which requires **iOS 13+** and Android
 **`minSdkVersion 21`**.
 
 ## Globe (`GoodGlobe`)
+
+<img src="screenshots/picglobe.png" alt="GoodGlobe with arcs" width="280">
 
 A minimalist, theme-aware globe with inertial drag-rotate, pinch-zoom, points +
 labels, and animated dashed arcs — back-of-globe overlays hide automatically.
@@ -64,6 +68,8 @@ GoodMapGlobe(
 ```
 
 ## Flat map (`GoodMap`)
+
+<img src="screenshots/pic2map.png" alt="GoodMap flat map with markers" width="280">
 
 A themed slippy map with overlay markers/popups, polylines and zoom/compass
 controls, driven by a `GoodMapController`.

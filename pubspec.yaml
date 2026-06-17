@@ -3,9 +3,9 @@ description: >-
   Beautiful, theme-aware Flutter map components — a native MapLibre flat map and
   a 3D globe with points, labels and animated great-circle arcs. Inspired by mapcn.
 version: 0.1.0
-repository: https://github.com/ildysilva/goodmap
-homepage: https://github.com/ildysilva/goodmap
-issue_tracker: https://github.com/ildysilva/goodmap/issues
+repository: https://github.com/IldySilva/goodmap
+homepage: https://github.com/IldySilva/goodmap
+issue_tracker: https://github.com/IldySilva/goodmap/issues
 
 topics:
   - map
@@ -13,6 +13,14 @@ topics:
   - globe
   - maplibre
   - geo
+
+screenshots:
+  - description: "GoodMap — a flat map and a 3D globe for Flutter."
+    path: screenshots/docbanner.jpg
+  - description: "3D globe with great-circle arcs (iOS)."
+    path: screenshots/picglobe.png
+  - description: "Themed flat map with markers (iOS)."
+    path: screenshots/pic2map.png
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
