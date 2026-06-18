@@ -2,7 +2,7 @@ name: goodmap
 description: >-
   Beautiful, theme-aware Flutter map components — a native MapLibre flat map and
   a 3D globe with points, labels and animated great-circle arcs. Inspired by mapcn.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/IldySilva/goodmap
 homepage: https://github.com/IldySilva/goodmap
 issue_tracker: https://github.com/IldySilva/goodmap/issues

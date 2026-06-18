@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
 import '../good_map.dart';
+import '../markers/marker.dart';
+import '../popups/popup.dart';
 import 'globe_overlays.dart';
 import 'good_globe.dart';
 
@@ -15,7 +17,9 @@ class GoodMapGlobe extends StatefulWidget {
   const GoodMapGlobe({
     required this.initialCenter,
     this.initialZoom = 1.0,
-    this.points = const [],
+    this.markers = const [],
+    @Deprecated('Use markers instead') this.points = const [],
+    this.popups = const [],
     this.arcs = const [],
     this.atmosphere = false,
     this.controls = const GoodControls(),
@@ -34,7 +38,16 @@ class GoodMapGlobe extends StatefulWidget {
   /// Initial globe zoom (0 = far, ~6 = close).
   final double initialZoom;
 
+  /// Custom markers (widgets, assets, or fallback dots) plotted on the map and globe.
+  final List<MarkerOptions> markers;
+
+  /// Labelled points plotted on the globe.
+  @Deprecated('Use markers instead')
   final List<GlobePoint> points;
+
+  /// Declarative popups on the map and globe.
+  final List<PopupOptions> popups;
+
   final List<GlobeArc> arcs;
   final bool atmosphere;
   final GoodControls controls;
@@ -82,6 +95,8 @@ class _GoodMapGlobeState extends State<GoodMapGlobe> {
             initialCenter: _center,
             initialZoom: widget.flatEntryZoom,
             controls: widget.controls,
+            markers: widget.markers,
+            popups: widget.popups,
             onCameraChanged: (pos) {
               _center = pos.target;
               if (pos.zoom < widget.flatZoomToGlobe) {
@@ -94,7 +109,9 @@ class _GoodMapGlobeState extends State<GoodMapGlobe> {
             key: const ValueKey('globe'),
             initialCenter: _center,
             initialZoom: _globeStartZoom,
+            markers: widget.markers,
             points: widget.points,
+            popups: widget.popups,
             arcs: widget.arcs,
             atmosphere: widget.atmosphere,
             onTap: widget.onTap,

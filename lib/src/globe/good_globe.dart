@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
+import '../markers/marker.dart';
+import '../popups/popup.dart';
 import 'globe_overlays.dart';
 import 'sphere_projection.dart';
 import 'sphere_shader_painter.dart';
@@ -17,8 +19,10 @@ class GoodGlobe extends StatefulWidget {
   const GoodGlobe({
     required this.initialCenter,
     this.initialZoom = 1,
-    this.points = const [],
+    this.markers = const [],
+    @Deprecated('Use markers instead') this.points = const [],
     this.arcs = const [],
+    this.popups = const [],
     this.atmosphere = false,
     this.atmosphereColor,
     this.onCameraChanged,
@@ -32,7 +36,14 @@ class GoodGlobe extends StatefulWidget {
   final double initialZoom;
 
   /// Labelled points plotted on the globe.
+  @Deprecated('Use markers instead')
   final List<GlobePoint> points;
+
+  /// Custom markers (widgets, assets, or fallback dots) plotted on the globe.
+  final List<MarkerOptions> markers;
+
+  /// Popups overlaying the globe.
+  final List<PopupOptions> popups;
 
   /// Great-circle arcs drawn between coordinates.
   final List<GlobeArc> arcs;
@@ -50,9 +61,9 @@ class GoodGlobe extends StatefulWidget {
   /// Called with the geographic coordinate under a tap, or null off-globe.
   final void Function(LatLng? coordinate)? onTap;
 
-  /// Called when a [GlobePoint] is tapped. The globe also shows a small popup
+  /// Called when a marker/point is tapped. The globe also shows a small popup
   /// card for the tapped point automatically.
-  final void Function(GlobePoint point)? onPointTap;
+  final void Function(MarkerOptions marker)? onPointTap;
 
   /// When false (tests), GPU shader/atlas and the inertia ticker are skipped.
   final bool renderEnabled;
@@ -66,12 +77,9 @@ class _GoodGlobeState extends State<GoodGlobe>
   final SphereShaderManager _shaderManager = SphereShaderManager();
 
   // Drives marching-dash animation on arcs.
-  late final AnimationController _dash = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  );
+  late final AnimationController _dash;
 
-  GlobePoint? _selectedPoint;
+  MarkerOptions? _selectedMarker;
 
   double _rotationX = 0; // latitude facing viewer (radians)
   double _rotationZ = 0; // longitude facing viewer (radians)
@@ -97,9 +105,22 @@ class _GoodGlobeState extends State<GoodGlobe>
 
   double _sensitivity() => 0.005 / math.pow(2.0, _zoom - 1.0);
 
+  List<MarkerOptions> get _allMarkers => [
+        ...widget.markers,
+        ...widget.points,
+      ];
+
+  List<MarkerOptions> get _canvasMarkers => _allMarkers
+      .where((m) => m.child == null && m.image == null)
+      .toList();
+
   @override
   void initState() {
     super.initState();
+    _dash = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
     _rotationX = widget.initialCenter.latitude * math.pi / 180.0;
     _rotationZ = widget.initialCenter.longitude * math.pi / 180.0;
     _zoom = widget.initialZoom;
@@ -210,11 +231,11 @@ class _GoodGlobeState extends State<GoodGlobe>
       rotationZ: _rotationZ,
     );
 
-    // Hit-test visible points first (within 22px of the projected dot).
-    GlobePoint? hit;
+    // Hit-test visible canvas points first (within 22px of the projected dot).
+    MarkerOptions? hit;
     var best = 22.0;
-    for (final p in widget.points) {
-      final screen = proj.project(p.coordinate);
+    for (final p in _canvasMarkers) {
+      final screen = proj.project(p.position);
       if (screen == null) continue;
       final dist = (screen - d.localPosition).distance;
       if (dist < best) {
@@ -223,9 +244,10 @@ class _GoodGlobeState extends State<GoodGlobe>
       }
     }
 
-    setState(() => _selectedPoint = hit);
+    setState(() => _selectedMarker = hit);
     if (hit != null) {
       widget.onPointTap?.call(hit);
+      hit.onTap?.call();
     } else {
       widget.onTap?.call(proj.unproject(d.localPosition));
     }
@@ -244,6 +266,52 @@ class _GoodGlobeState extends State<GoodGlobe>
     super.dispose();
   }
 
+  Iterable<Widget> _buildMarkerOverlay(MarkerOptions marker, SphereProjection proj) {
+    final screen = proj.project(marker.position);
+    if (screen == null) return const [];
+    return [
+      Positioned(
+        left: screen.dx,
+        top: screen.dy,
+        child: FractionalTranslation(
+          translation: Offset(-(marker.alignment.x + 1) / 2, -(marker.alignment.y + 1) / 2),
+          child: marker.onTap == null
+              ? _markerChild(marker)
+              : GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: marker.onTap,
+                  child: _markerChild(marker),
+                ),
+        ),
+      ),
+    ];
+  }
+
+  Widget _markerChild(MarkerOptions marker) {
+    if (marker.child != null) return marker.child!;
+    final image = marker.image!;
+    return Image.asset(
+      image.assetName,
+      width: image.size.width,
+      height: image.size.height,
+    );
+  }
+
+  Iterable<Widget> _buildPopupOverlay(PopupOptions popup, SphereProjection proj) {
+    final screen = proj.project(popup.position);
+    if (screen == null) return const [];
+    return [
+      Positioned(
+        left: screen.dx,
+        top: screen.dy,
+        child: FractionalTranslation(
+          translation: Offset(-(popup.alignment.x + 1) / 2, -(popup.alignment.y + 1) / 2),
+          child: popup.child,
+        ),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -255,12 +323,6 @@ class _GoodGlobeState extends State<GoodGlobe>
         builder: (context, constraints) {
           _lastSize = Size(constraints.maxWidth, constraints.maxHeight);
           final shader = _shader;
-          if (!widget.renderEnabled || shader == null) {
-            return Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: const SizedBox.expand(),
-            );
-          }
           final shortSide = math.min(_lastSize.width, _lastSize.height);
           final center = Offset(_lastSize.width / 2, _lastSize.height / 2);
           final radius = globeRadius(_zoom, shortSide);
@@ -270,13 +332,19 @@ class _GoodGlobeState extends State<GoodGlobe>
             rotationX: _rotationX,
             rotationZ: _rotationZ,
           );
-          final selected = _selectedPoint;
+          final canvasMarkers = _canvasMarkers;
+          final allMarkers = _allMarkers;
+          final selected = _selectedMarker;
           final selectedScreen =
-              selected == null ? null : projection.project(selected.coordinate);
+              selected == null ? null : projection.project(selected.position);
           return Stack(
             fit: StackFit.expand,
             children: [
-              if (widget.atmosphere)
+              if (!widget.renderEnabled || shader == null)
+                Container(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+              if (widget.renderEnabled && widget.atmosphere)
                 CustomPaint(
                   size: Size.infinite,
                   painter: AtmospherePainter(
@@ -286,35 +354,47 @@ class _GoodGlobeState extends State<GoodGlobe>
                         Theme.of(context).colorScheme.primary,
                   ),
                 ),
-              CustomPaint(
-                size: Size.infinite,
-                painter: SphereShaderPainter(
-                  shader: shader,
-                  center: center,
-                  radius: radius,
-                  rotationX: _rotationX,
-                  rotationZ: _rotationZ,
-                ),
-              ),
-              if (widget.arcs.isNotEmpty || widget.points.isNotEmpty)
+              if (widget.renderEnabled && shader != null)
                 CustomPaint(
                   size: Size.infinite,
-                  painter: GlobeOverlayPainter(
-                    projection: projection,
-                    arcs: widget.arcs,
-                    points: widget.points,
-                    dashAnimation: _dash,
+                  painter: SphereShaderPainter(
+                    shader: shader,
+                    center: center,
+                    radius: radius,
+                    rotationX: _rotationX,
+                    rotationZ: _rotationZ,
                   ),
                 ),
+              if (widget.arcs.isNotEmpty || canvasMarkers.isNotEmpty)
+                IgnorePointer(
+                  child: CustomPaint(
+                    size: Size.infinite,
+                    painter: GlobeOverlayPainter(
+                      projection: projection,
+                      arcs: widget.arcs,
+                      markers: canvasMarkers,
+                      dashAnimation: _dash,
+                    ),
+                  ),
+                ),
+              // Widget & image markers projected on the sphere:
+              for (final marker in allMarkers)
+                if (marker.child != null || marker.image != null)
+                  ..._buildMarkerOverlay(marker, projection),
+
+              // Declarative popups projected on the sphere:
+              for (final popup in widget.popups)
+                ..._buildPopupOverlay(popup, projection),
+
               // Popup card for a tapped point — follows it, hides when occluded.
-              if (selected != null && selectedScreen != null)
+              if (selected != null && selectedScreen != null && selected.label != null)
                 Positioned(
                   left: selectedScreen.dx - 90,
                   top: selectedScreen.dy - 56,
                   width: 180,
                   child: _PointPopup(
-                    label: selected.label ?? 'Point',
-                    onClose: () => setState(() => _selectedPoint = null),
+                    label: selected.label!,
+                    onClose: () => setState(() => _selectedMarker = null),
                   ),
                 ),
             ],

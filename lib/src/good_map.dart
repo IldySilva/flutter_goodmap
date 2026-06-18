@@ -28,6 +28,8 @@ class GoodMap extends StatefulWidget {
     this.initialZoom = 11,
     this.controls = const GoodControls(),
     this.theme,
+    this.markers = const [],
+    this.popups = const [],
     @visibleForTesting this.mapBuilder = _defaultMapBuilder,
     super.key,
   });
@@ -37,6 +39,8 @@ class GoodMap extends StatefulWidget {
   final GoodControls controls;
   final GoodMapTheme? theme;
   final void Function(GoodMapController)? onMapReady;
+  final List<MarkerOptions> markers;
+  final List<PopupOptions> popups;
 
   /// Called on camera moves with the current position (target + zoom).
   final void Function(CameraPosition)? onCameraChanged;
@@ -52,6 +56,35 @@ class _GoodMapState extends State<GoodMap> {
   int _cameraVersion = 0;
   bool _readyCalled = false;
 
+  final Set<MarkerId> _declarativeMarkerIds = {};
+  final Set<PopupId> _declarativePopupIds = {};
+
+  void _syncMarkers() {
+    final c = _controller;
+    if (c == null) return;
+    for (final id in _declarativeMarkerIds) {
+      c.removeMarker(id);
+    }
+    _declarativeMarkerIds.clear();
+    for (final marker in widget.markers) {
+      final id = c.addMarker(marker);
+      _declarativeMarkerIds.add(id);
+    }
+  }
+
+  void _syncPopups() {
+    final c = _controller;
+    if (c == null) return;
+    for (final id in _declarativePopupIds) {
+      c.hidePopup(id);
+    }
+    _declarativePopupIds.clear();
+    for (final popup in widget.popups) {
+      final id = c.showPopup(popup.position, popup.child, alignment: popup.alignment);
+      _declarativePopupIds.add(id);
+    }
+  }
+
   void _onMapCreated(MapLibreMapController native) {
     if (_controller != null) return; // idempotent: ignore re-fires
     setState(() {
@@ -65,6 +98,8 @@ class _GoodMapState extends State<GoodMap> {
   void _onStyleLoaded() {
     if (!_readyCalled) {
       _readyCalled = true;
+      _syncMarkers();
+      _syncPopups();
       widget.onMapReady?.call(_controller!);
     } else {
       // Theme changed mid-session: GL-scene objects (symbols + lines) must be
@@ -76,6 +111,19 @@ class _GoodMapState extends State<GoodMap> {
   void _onCameraMove(CameraPosition position) {
     setState(() => _cameraVersion++);
     widget.onCameraChanged?.call(position);
+  }
+
+  @override
+  void didUpdateWidget(GoodMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_controller != null && _readyCalled) {
+      if (oldWidget.markers != widget.markers) {
+        _syncMarkers();
+      }
+      if (oldWidget.popups != widget.popups) {
+        _syncPopups();
+      }
+    }
   }
 
   @override

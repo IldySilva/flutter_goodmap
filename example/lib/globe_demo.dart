@@ -14,15 +14,15 @@ const _cities = <(String, LatLng)>[
   ('Sydney', LatLng(-33.87, 151.21)),
 ];
 
-final _points = <GlobePoint>[
-  const GlobePoint(
-    coordinate: _luanda,
+final _markers = <MarkerOptions>[
+  const MarkerOptions(
+    position: _luanda,
     label: 'Luanda',
     color: Colors.white,
     radius: 6,
   ),
   for (final c in _cities)
-    GlobePoint(coordinate: c.$2, label: c.$1, color: const Color(0xFF4F86F7)),
+    MarkerOptions(position: c.$2, label: c.$1, color: const Color(0xFF4F86F7)),
 ];
 
 final _arcs = <GlobeArc>[
@@ -48,7 +48,7 @@ class _GlobeDemoState extends State<GlobeDemo> {
           child: GoodMapGlobe(
             initialCenter: _luanda,
             initialZoom: 1.0,
-            points: _points,
+            markers: _markers,
             arcs: _arcs,
             onTap: (c) => setState(() => _tapped = c),
           ),

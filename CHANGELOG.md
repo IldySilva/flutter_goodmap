@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0
+
+Shared overlay vocabulary unifying flat map and globe marker/popup types.
+
+### Overlays
+- **Shared overlay vocabulary**: Unified `MarkerOptions` and `PopupOptions` across `GoodMap`, `GoodGlobe`, and `GoodMapGlobe` to enable seamless transition and reuse of overlays.
+- Deprecated `GlobePoint` in favor of `MarkerOptions` while keeping a backwards-compatible `GlobePoint` subclass.
+- Added support for declarative `markers` and `popups` list parameters directly to `GoodMap` and `GoodMapGlobe` constructors, which synchronize dynamically with the underlying `GoodMapController`.
+- Project and render interactive custom widget and image asset markers on the 3D globe stack.
+- Retained custom high-performance canvas path for simple dot markers on the globe.
+
 ## 0.1.0
 
 Initial release. Two map surfaces, inspired by mapcn.

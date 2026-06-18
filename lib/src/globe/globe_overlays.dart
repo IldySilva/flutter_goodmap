@@ -3,23 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
+import '../markers/marker.dart';
 import 'sphere_projection.dart';
 
-/// A labelled point plotted on the globe.
-@immutable
-class GlobePoint {
-  const GlobePoint({
-    required this.coordinate,
-    this.label,
-    this.color = const Color(0xFF4F86F7),
-    this.radius = 4,
-  });
-
-  final LatLng coordinate;
-  final String? label;
-  final Color color;
-  final double radius;
-}
 
 /// A great-circle arc between two coordinates, bowing off the globe surface.
 @immutable
@@ -51,13 +37,13 @@ class GlobeOverlayPainter extends CustomPainter {
   GlobeOverlayPainter({
     required this.projection,
     required this.arcs,
-    required this.points,
+    required this.markers,
     this.dashAnimation,
   }) : super(repaint: dashAnimation);
 
   final SphereProjection projection;
   final List<GlobeArc> arcs;
-  final List<GlobePoint> points;
+  final List<MarkerOptions> markers;
 
   /// Drives the marching-dash phase (0..1, repeating). Null = static dashes.
   final Animation<double>? dashAnimation;
@@ -68,8 +54,8 @@ class GlobeOverlayPainter extends CustomPainter {
     for (final arc in arcs) {
       _paintArc(canvas, arc, phase);
     }
-    for (final point in points) {
-      _paintPoint(canvas, point);
+    for (final marker in markers) {
+      _paintPoint(canvas, marker);
     }
   }
 
@@ -132,18 +118,21 @@ class GlobeOverlayPainter extends CustomPainter {
     }
   }
 
-  void _paintPoint(Canvas canvas, GlobePoint point) {
-    final screen = projection.project(point.coordinate);
+  void _paintPoint(Canvas canvas, MarkerOptions marker) {
+    final screen = projection.project(marker.position);
     if (screen == null) return; // behind the globe
+
+    final radius = marker.radius ?? 4.0;
+    final color = marker.color ?? const Color(0xFF4F86F7);
 
     canvas.drawCircle(
       screen,
-      point.radius + 2,
+      radius + 2,
       Paint()..color = Colors.white.withValues(alpha: 0.9),
     );
-    canvas.drawCircle(screen, point.radius, Paint()..color = point.color);
+    canvas.drawCircle(screen, radius, Paint()..color = color);
 
-    final label = point.label;
+    final label = marker.label;
     if (label != null) {
       final tp = TextPainter(
         text: TextSpan(
@@ -159,7 +148,7 @@ class GlobeOverlayPainter extends CustomPainter {
       )..layout();
       tp.paint(
         canvas,
-        Offset(screen.dx - tp.width / 2, screen.dy - point.radius - tp.height - 4),
+        Offset(screen.dx - tp.width / 2, screen.dy - radius - tp.height - 4),
       );
     }
   }
@@ -180,7 +169,7 @@ class GlobeOverlayPainter extends CustomPainter {
   bool shouldRepaint(GlobeOverlayPainter old) =>
       old.projection != projection ||
       old.arcs != arcs ||
-      old.points != points;
+      old.markers != markers;
 }
 
 /// A soft glow ring around the globe silhouette. Drawn behind the sphere so only

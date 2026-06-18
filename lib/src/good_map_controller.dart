@@ -11,7 +11,7 @@ import 'markers/marker.dart';
 import 'popups/popup.dart';
 
 export 'popups/popup.dart' show PopupId, PopupOptions;
-export 'markers/marker.dart' show MarkerId, MarkerImage, MarkerOptions;
+export 'markers/marker.dart' show MarkerId, MarkerImage, MarkerOptions, GlobePoint;
 export 'lines/polyline.dart' show PolylineId, PolylineOptions;
 
 /// Single point of imperative interaction with a [GoodMap]. Wraps the native
@@ -221,13 +221,18 @@ class GoodMapController extends ChangeNotifier {
   /// All overlay-widget entries (child-markers + popups) to be projected.
   List<OverlayEntryData> get overlayEntries => <OverlayEntryData>[
         for (final entry in _markers.items.entries)
-          if (entry.value.child != null)
+          if (entry.value.child != null || entry.value.image == null)
             OverlayEntryData(
               key: MarkerId(entry.key),
               position: entry.value.position,
-              alignment: entry.value.alignment,
+              alignment: entry.value.child != null ? entry.value.alignment : Alignment.center,
               onTap: entry.value.onTap,
-              child: entry.value.child!,
+              child: entry.value.child ??
+                  DefaultDotMarker(
+                    color: entry.value.color ?? const Color(0xFF4F86F7),
+                    radius: entry.value.radius ?? 4,
+                    label: entry.value.label,
+                  ),
             ),
         for (final entry in _popups.items.entries)
           OverlayEntryData(
@@ -263,3 +268,65 @@ class OverlayEntryData {
   final Alignment alignment;
   final VoidCallback? onTap;
 }
+
+/// A default circular dot marker with optional label used when a marker has no custom widget.
+class DefaultDotMarker extends StatelessWidget {
+  const DefaultDotMarker({
+    required this.color,
+    required this.radius,
+    this.label,
+    super.key,
+  });
+
+  final Color color;
+  final double radius;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final dot = Container(
+      width: radius * 2 + 4,
+      height: radius * 2 + 4,
+      decoration: const BoxDecoration(
+        color: Color(0xE6FFFFFF),
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Container(
+        width: radius * 2,
+        height: radius * 2,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+
+    if (label == null) return dot;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          decoration: BoxDecoration(
+            color: const Color(0x8A000000),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            label!,
+            style: const TextStyle(
+              color: Color(0xFFFFFFFF),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              decoration: TextDecoration.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        dot,
+      ],
+    );
+  }
+}
+

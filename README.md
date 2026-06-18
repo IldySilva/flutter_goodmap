@@ -16,7 +16,7 @@ great-circle arcs.
 
 ```yaml
 dependencies:
-  goodmap: ^0.1.0
+  goodmap: ^0.2.0
 ```
 
 ```dart

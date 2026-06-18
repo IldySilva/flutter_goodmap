@@ -35,6 +35,9 @@ class MarkerOptions {
     this.image,
     this.alignment = Alignment.center,
     this.onTap,
+    this.label,
+    this.color,
+    this.radius,
   });
 
   final LatLng position;
@@ -42,4 +45,30 @@ class MarkerOptions {
   final MarkerImage? image;
   final Alignment alignment;
   final VoidCallback? onTap;
+
+  /// Optional text label (used for simple point-labels on the globe or flat map).
+  final String? label;
+
+  /// Optional color (used for fallback dot markers).
+  final Color? color;
+
+  /// Optional radius (used for fallback dot markers).
+  final double? radius;
 }
+
+/// A labelled point plotted on the globe (deprecated: use [MarkerOptions] instead).
+@Deprecated('Use MarkerOptions instead')
+@immutable
+class GlobePoint extends MarkerOptions {
+  const GlobePoint({
+    required LatLng coordinate,
+    super.label,
+    super.color = const Color(0xFF4F86F7),
+    super.radius = 4,
+  }) : super(
+          position: coordinate,
+        );
+
+  LatLng get coordinate => position;
+}
+
