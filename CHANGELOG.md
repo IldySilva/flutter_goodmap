@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+Windowed Per-Region Level of Detail (LOD) on the 3D globe.
+
+### 3D Globe
+- **Windowed LOD System**: Added dynamic viewport-bound calculation and tile fetching (up to z12 city level) only for the visible portion of the globe when zoom > 3.0.
+- **Background Reprojection**: Compiled tiles into local mosaics reprojected Mercator→equirectangular in a background isolate (`compute`) to eliminate main thread jank.
+- **Atmosphere Shader Integration**: Upgraded the sphere fragment shader (`shaders/sphere.frag`) and painter (`SphereShaderPainter`) to overlay dynamic high-resolution detail textures seamlessly with meridian-wrapping calculations.
+- **Lifecycle & Gestures Throttling**: Added a 250ms debounce for loading high-res details when the camera remains stationary, resetting builder tasks during active dragging, pinch-zooms, and inertial scrolling to maintain smooth 60fps interaction.
+
 ## 0.2.0
 
 Shared overlay vocabulary unifying flat map and globe marker/popup types.
