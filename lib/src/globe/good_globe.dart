@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -7,6 +8,7 @@ import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
 import '../markers/marker.dart';
 import '../popups/popup.dart';
+import 'detail_tile_atlas.dart';
 import 'globe_overlays.dart';
 import 'sphere_projection.dart';
 import 'sphere_shader_painter.dart';
@@ -90,6 +92,12 @@ class _GoodGlobeState extends State<GoodGlobe>
   TileAtlas? _atlasBuilder;
   Brightness? _brightness;
 
+  // Windowed LOD details properties
+  ui.Image? _detailAtlas;
+  DetailBounds? _detailBounds;
+  DetailTileAtlas? _detailBuilder;
+  Timer? _lodDebounce;
+
   double _baseZoom = 1;
   Offset _lastFocal = Offset.zero;
   Size _lastSize = Size.zero;
@@ -139,6 +147,11 @@ class _GoodGlobeState extends State<GoodGlobe>
     final b = Theme.of(context).brightness;
     if (_brightness != b) {
       _brightness = b;
+      if (_detailAtlas != null) {
+        _detailAtlas?.dispose();
+        _detailAtlas = null;
+        _detailBounds = null;
+      }
       _rebuildAtlas(b);
     }
   }
@@ -152,6 +165,7 @@ class _GoodGlobeState extends State<GoodGlobe>
     _atlas?.dispose();
     _atlas = img;
     _rebuildShader();
+    _scheduleLodDetails();
   }
 
   void _rebuildShader() {
@@ -161,10 +175,92 @@ class _GoodGlobeState extends State<GoodGlobe>
     if (mounted) setState(() {});
   }
 
+  // --- Windowed LOD detail loader logic ------------------------------------
+
+  void _resetLodDebounce() {
+    _lodDebounce?.cancel();
+    _lodDebounce = null;
+  }
+
+  void _scheduleLodDetails() {
+    _resetLodDebounce();
+    if (!widget.renderEnabled) return;
+    if (_zoom <= 3.0) {
+      if (_detailAtlas != null) {
+        final oldAtlas = _detailAtlas;
+        _detailAtlas = null;
+        _detailBounds = null;
+        _detailBuilder?.dispose();
+        _detailBuilder = null;
+        if (mounted) {
+          setState(() {});
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          oldAtlas?.dispose();
+        });
+      }
+      return;
+    }
+
+    _lodDebounce = Timer(const Duration(milliseconds: 250), () {
+      _loadDetailAtlas();
+    });
+  }
+
+  Future<void> _loadDetailAtlas() async {
+    if (!mounted || !widget.renderEnabled) return;
+    final brightness = _brightness;
+    if (brightness == null) return;
+
+    final size = _lastSize;
+    if (size.isEmpty) return;
+    final shortSide = math.min(size.width, size.height);
+    final radius = globeRadius(_zoom, shortSide);
+    final center = Offset(size.width / 2, size.height / 2);
+    final projection = SphereProjection(
+      center: center,
+      radius: radius,
+      rotationX: _rotationX,
+      rotationZ: _rotationZ,
+    );
+
+    _detailBuilder?.dispose();
+
+    final builder = DetailTileAtlas(
+      brightness: brightness,
+      center: _center,
+      zoom: _zoom,
+      viewportSize: size,
+      projection: projection,
+    );
+    _detailBuilder = builder;
+
+    final result = await builder.build();
+    if (!mounted || _detailBuilder != builder || result == null) {
+      if (result != null) {
+        result.image.dispose();
+      }
+      return;
+    }
+
+    final oldAtlas = _detailAtlas;
+    setState(() {
+      _detailAtlas = result.image;
+      _detailBounds = result.bounds;
+    });
+
+    if (oldAtlas != null && oldAtlas != _detailAtlas) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        oldAtlas.dispose();
+      });
+    }
+  }
+
   // --- Gestures + inertia --------------------------------------------------
 
   void _onScaleStart(ScaleStartDetails d) {
     _stopInertia();
+    _resetLodDebounce();
     _baseZoom = _zoom;
     _lastFocal = d.localFocalPoint;
   }
@@ -173,6 +269,7 @@ class _GoodGlobeState extends State<GoodGlobe>
     final delta = d.localFocalPoint - _lastFocal;
     _lastFocal = d.localFocalPoint;
     final s = _sensitivity();
+    _resetLodDebounce();
     setState(() {
       _rotationZ -= delta.dx * s;
       _rotationX = (_rotationX + delta.dy * s).clamp(-_maxLatRad, _maxLatRad);
@@ -192,6 +289,8 @@ class _GoodGlobeState extends State<GoodGlobe>
     if (_angVelX.abs() > 0.05 || _angVelZ.abs() > 0.05) {
       _lastTickSeconds = null;
       if (!_ticker.isActive) _ticker.start();
+    } else {
+      _scheduleLodDetails();
     }
   }
 
@@ -208,10 +307,15 @@ class _GoodGlobeState extends State<GoodGlobe>
     _angVelZ *= decay;
     _angVelX *= decay;
 
+    _resetLodDebounce();
+
     setState(() {});
     widget.onCameraChanged?.call(_center, _zoom);
 
-    if (_angVelX.abs() < 0.01 && _angVelZ.abs() < 0.01) _stopInertia();
+    if (_angVelX.abs() < 0.01 && _angVelZ.abs() < 0.01) {
+      _stopInertia();
+      _scheduleLodDetails();
+    }
   }
 
   void _stopInertia() {
@@ -263,6 +367,9 @@ class _GoodGlobeState extends State<GoodGlobe>
     _atlasBuilder?.dispose();
     _atlas?.dispose();
     _shader?.dispose();
+    _detailBuilder?.dispose();
+    _detailAtlas?.dispose();
+    _lodDebounce?.cancel();
     super.dispose();
   }
 
@@ -354,11 +461,14 @@ class _GoodGlobeState extends State<GoodGlobe>
                         Theme.of(context).colorScheme.primary,
                   ),
                 ),
-              if (widget.renderEnabled && shader != null)
+              if (widget.renderEnabled && shader != null && _atlas != null)
                 CustomPaint(
                   size: Size.infinite,
                   painter: SphereShaderPainter(
                     shader: shader,
+                    baseAtlas: _atlas!,
+                    detailAtlas: _detailAtlas,
+                    detailBounds: _detailBounds,
                     center: center,
                     radius: radius,
                     rotationX: _rotationX,

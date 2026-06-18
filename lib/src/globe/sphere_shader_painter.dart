@@ -2,6 +2,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import 'detail_tile_atlas.dart';
+
 /// Loads the sphere `FragmentProgram` and creates shader instances with the
 /// equirectangular atlas bound. Uses the stable `ui.FragmentProgram` API — no
 /// flutter_gpu, works on iOS, Android, web and desktop.
@@ -50,6 +52,9 @@ class SphereShaderManager {
 class SphereShaderPainter extends CustomPainter {
   SphereShaderPainter({
     required this.shader,
+    required this.baseAtlas,
+    this.detailAtlas,
+    this.detailBounds,
     required this.center,
     required this.radius,
     required this.rotationX,
@@ -57,6 +62,9 @@ class SphereShaderPainter extends CustomPainter {
   });
 
   final ui.FragmentShader shader;
+  final ui.Image baseAtlas;
+  final ui.Image? detailAtlas;
+  final DetailBounds? detailBounds;
   final Offset center;
   final double radius;
   final double rotationX;
@@ -76,6 +84,20 @@ class SphereShaderPainter extends CustomPainter {
     shader.setFloat(i++, rotationX);
     shader.setFloat(i++, rotationZ);
 
+    // Bind dynamic detail bounds float uniforms.
+    final hasDetail = detailAtlas != null && detailBounds != null;
+    shader.setFloat(i++, hasDetail ? detailBounds!.minLon : 0.0);
+    shader.setFloat(i++, hasDetail ? detailBounds!.maxLon : 0.0);
+    shader.setFloat(i++, hasDetail ? detailBounds!.minLat : 0.0);
+    shader.setFloat(i++, hasDetail ? detailBounds!.maxLat : 0.0);
+    shader.setFloat(i++, hasDetail ? 1.0 : 0.0);
+
+    // Bind texture samplers:
+    // Slot 0: base world atlas
+    // Slot 1: detail high-res atlas (fallback to base atlas if none loaded to prevent GL crashes)
+    shader.setImageSampler(0, baseAtlas);
+    shader.setImageSampler(1, hasDetail ? detailAtlas! : baseAtlas);
+
     final paint = Paint()..shader = shader;
     canvas.drawRect(Offset.zero & size, paint);
   }
@@ -83,6 +105,9 @@ class SphereShaderPainter extends CustomPainter {
   @override
   bool shouldRepaint(SphereShaderPainter old) =>
       old.shader != shader ||
+      old.baseAtlas != baseAtlas ||
+      old.detailAtlas != detailAtlas ||
+      old.detailBounds != detailBounds ||
       old.center != center ||
       old.radius != radius ||
       old.rotationX != rotationX ||

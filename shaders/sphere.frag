@@ -12,8 +12,14 @@ uniform float uCenterY;
 uniform float uRadius;
 uniform float uRotationX;   // latitude facing the viewer (radians)
 uniform float uRotationZ;   // longitude facing the viewer (radians)
+uniform float uDetailMinLon;
+uniform float uDetailMaxLon;
+uniform float uDetailMinLat;
+uniform float uDetailMaxLat;
+uniform float uHasDetail;
 
-uniform sampler2D uTexture; // equirectangular atlas
+uniform sampler2D uTexture;       // base world atlas
+uniform sampler2D uDetailTexture;  // high-res detail atlas
 
 const float PI = 3.14159265359;
 const float TWO_PI = 6.28318530718;
@@ -64,11 +70,36 @@ void main() {
   float lat = asin(clamp(v.z / uRadius, -1.0, 1.0));
   float lon = atan(v.y, v.x);
 
-  vec2 uv;
-  uv.x = (lon + PI) / TWO_PI;     // -180..180 -> 0..1
-  uv.y = (HALF_PI - lat) / PI;    // 90..-90 -> 0..1
+  vec4 color;
+  bool useDetail = false;
+  if (uHasDetail > 0.5) {
+    bool inLat = (lat >= uDetailMinLat && lat <= uDetailMaxLat);
+    bool inLon = uDetailMaxLon >= uDetailMinLon
+        ? (lon >= uDetailMinLon && lon <= uDetailMaxLon)
+        : (lon >= uDetailMinLon || lon <= uDetailMaxLon);
+    if (inLat && inLon) {
+      useDetail = true;
+      vec2 detailUv;
+      float diff = lon - uDetailMinLon;
+      if (diff < 0.0) {
+        diff += TWO_PI;
+      }
+      float span = uDetailMaxLon - uDetailMinLon;
+      if (span < 0.0) {
+        span += TWO_PI;
+      }
+      detailUv.x = diff / span;
+      detailUv.y = (uDetailMaxLat - lat) / (uDetailMaxLat - uDetailMinLat);
+      color = texture(uDetailTexture, detailUv);
+    }
+  }
 
-  vec4 color = texture(uTexture, uv);
+  if (!useDetail) {
+    vec2 uv;
+    uv.x = (lon + PI) / TWO_PI;     // -180..180 -> 0..1
+    uv.y = (HALF_PI - lat) / PI;    // 90..-90 -> 0..1
+    color = texture(uTexture, uv);
+  }
 
   // Premultiplied alpha for clean compositing at the AA edge.
   color.rgb *= edgeAlpha;
