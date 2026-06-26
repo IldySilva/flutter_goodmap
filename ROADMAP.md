@@ -84,6 +84,7 @@ Lean into the differentiator.
 ## 0.4.0 — Data visualization & richness
 
 - **Heatmaps** — flat map and globe.
+- **pointed map** 
 - **Custom globe textures & day/night** — satellite imagery, other planets, and
   a day/night terminator (sun position).
 - **Animated/time-series data** — points and arcs that animate over a timeline.

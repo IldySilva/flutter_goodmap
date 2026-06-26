@@ -5,6 +5,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/widgets.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import 'globe/world_land_dots.dart';
+import 'heatmap/heatmap.dart';
 import 'internal/registry.dart';
 import 'lines/polyline.dart';
 import 'markers/marker.dart';
@@ -13,6 +15,7 @@ import 'popups/popup.dart';
 export 'popups/popup.dart' show PopupId, PopupOptions;
 export 'markers/marker.dart' show MarkerId, MarkerImage, MarkerOptions, GlobePoint;
 export 'lines/polyline.dart' show PolylineId, PolylineOptions;
+export 'heatmap/heatmap.dart' show HeatmapId, HeatmapOptions;
 
 /// Single point of imperative interaction with a [GoodMap]. Wraps the native
 /// [MapLibreMapController] and owns the marker + popup registries. Notifies
@@ -30,6 +33,15 @@ class GoodMapController extends ChangeNotifier {
   // is not wired to notifyListeners — it just allocates ids and stores options
   // for re-application after a style reload.
   final Registry<PolylineOptions> _polylines = Registry<PolylineOptions>();
+
+  // --- Heatmaps -----------------------------------------------------------
+  final Registry<HeatmapOptions> _heatmaps = Registry<HeatmapOptions>();
+
+  // --- Dotted grid state --------------------------------------------------
+  bool _dottedGridEnabled = false;
+
+  // --- 3D buildings state -------------------------------------------------
+  bool _buildings3DEnabled = false;
 
   // --- Camera -------------------------------------------------------------
 
@@ -125,6 +137,11 @@ class GoodMapController extends ChangeNotifier {
     for (final entry in _polylines.items.entries) {
       _createLine(entry.key, entry.value);
     }
+    if (_dottedGridEnabled) _applyDottedGrid();
+    if (_buildings3DEnabled) _applyBuildings3D();
+    for (final entry in _heatmaps.items.entries) {
+      _createHeatmapLayer(entry.key, entry.value);
+    }
   }
 
   Future<void> _createSymbol(int id, MarkerOptions options) async {
@@ -193,6 +210,191 @@ class GoodMapController extends ChangeNotifier {
     _lines[id] = line;
   }
 
+  // --- Dotted world grid -------------------------------------------------
+
+  static const String _kDottedGridSource = '_goodmap_land_dots';
+  static const String _kDottedGridLayer = '_goodmap_land_dots_layer';
+
+  /// Shows the dotted world landmass grid on the flat map. The grid is drawn
+  /// as small theme-aware circles using [kWorldLandDots] coordinates.
+  Future<void> enableDottedGrid({Color? color}) async {
+    _dottedGridEnabled = true;
+    await _applyDottedGrid(color: color);
+  }
+
+  /// Removes the dotted world landmass grid from the flat map.
+  Future<void> disableDottedGrid() async {
+    _dottedGridEnabled = false;
+    try {
+      await _native.removeLayer(_kDottedGridLayer);
+      await _native.removeSource(_kDottedGridSource);
+    } catch (_) {}
+  }
+
+  Future<void> _applyDottedGrid({Color? color}) async {
+    final dotColor = color ?? const Color(0xFF555555);
+    final features = kWorldLandDots.map((pt) => {
+      'type': 'Feature',
+      'geometry': {
+        'type': 'Point',
+        'coordinates': [pt.longitude, pt.latitude],
+      },
+      'properties': <String, dynamic>{},
+    }).toList();
+    final geojson = {
+      'type': 'FeatureCollection',
+      'features': features,
+    };
+    // Remove any existing layer/source first (after a style reload).
+    try {
+      await _native.removeLayer(_kDottedGridLayer);
+      await _native.removeSource(_kDottedGridSource);
+    } catch (_) {}
+    await _native.addSource(
+      _kDottedGridSource,
+      GeojsonSourceProperties(data: geojson),
+    );
+    await _native.addCircleLayer(
+      _kDottedGridSource,
+      _kDottedGridLayer,
+      CircleLayerProperties(
+        circleRadius: 1.8,
+        circleColor: dotColor.toHexStringRGB(),
+        circleOpacity: dotColor.a,
+      ),
+    );
+  }
+
+  // --- Heatmaps ----------------------------------------------------------
+
+  /// Adds a heatmap layer and returns its [HeatmapId]. The heatmap is rendered
+  /// natively by MapLibre using a GeoJSON source built from [options.points].
+  Future<HeatmapId> addHeatmap(HeatmapOptions options) async {
+    final id = _heatmaps.add(options);
+    await _createHeatmapLayer(id, options);
+    return HeatmapId(id);
+  }
+
+  /// Updates an existing heatmap. Unknown [id] is a no-op.
+  Future<void> updateHeatmap(HeatmapId id, HeatmapOptions options) async {
+    if (!_heatmaps.items.containsKey(id.value)) return;
+    _heatmaps.update(id.value, options);
+    await _disposeHeatmap(id.value);
+    await _createHeatmapLayer(id.value, options);
+  }
+
+  /// Removes a heatmap layer. Unknown [id] is a no-op.
+  Future<void> removeHeatmap(HeatmapId id) async {
+    if (!_heatmaps.items.containsKey(id.value)) return;
+    _heatmaps.remove(id.value);
+    await _disposeHeatmap(id.value);
+  }
+
+  /// Removes all heatmap layers.
+  Future<void> clearHeatmaps() async {
+    for (final id in _heatmaps.items.keys.toList()) {
+      await _disposeHeatmap(id);
+    }
+    _heatmaps.clear();
+  }
+
+  Future<void> _createHeatmapLayer(int id, HeatmapOptions options) async {
+    final sourceId = '_goodmap_heatmap_src_$id';
+    final layerId = '_goodmap_heatmap_lyr_$id';
+    final features = options.points.map((pt) {
+      final w = options.weights?.isEmpty == true
+          ? 1.0
+          : (options.weights![options.points.indexOf(pt)]);
+      return {
+        'type': 'Feature',
+        'geometry': {
+          'type': 'Point',
+          'coordinates': [pt.longitude, pt.latitude],
+        },
+        'properties': {'weight': w},
+      };
+    }).toList();
+    final geojson = {'type': 'FeatureCollection', 'features': features};
+    try {
+      await _native.removeLayer(layerId);
+      await _native.removeSource(sourceId);
+    } catch (_) {}
+    await _native.addSource(sourceId, GeojsonSourceProperties(data: geojson));
+    await _native.addHeatmapLayer(
+      sourceId,
+      layerId,
+      HeatmapLayerProperties(
+        heatmapRadius: options.radius,
+        heatmapIntensity: options.intensity,
+        heatmapOpacity: options.opacity,
+        heatmapWeight: [
+          'interpolate',
+          ['linear'],
+          ['get', 'weight'],
+          0, 0,
+          1, 1,
+        ],
+        heatmapColor: [
+          'interpolate',
+          ['linear'],
+          ['heatmap-density'],
+          0, 'rgba(0,0,255,0)',
+          0.2, 'royalblue',
+          0.4, 'cyan',
+          0.6, 'lime',
+          0.8, 'yellow',
+          1, 'red',
+        ],
+      ),
+    );
+  }
+
+  Future<void> _disposeHeatmap(int id) async {
+    final sourceId = '_goodmap_heatmap_src_$id';
+    final layerId = '_goodmap_heatmap_lyr_$id';
+    try {
+      await _native.removeLayer(layerId);
+      await _native.removeSource(sourceId);
+    } catch (_) {}
+  }
+
+  // --- 3D Building Extrusions ---------------------------------------------
+
+  static const String _kBuildingsLayer = '_goodmap_buildings_3d';
+
+  /// Enables 3D building fill-extrusion from the active basemap's building data.
+  Future<void> enableBuildings3D({Color? color}) async {
+    _buildings3DEnabled = true;
+    await _applyBuildings3D(color: color);
+  }
+
+  /// Removes the 3D building layer.
+  Future<void> disableBuildings3D() async {
+    _buildings3DEnabled = false;
+    try {
+      await _native.removeLayer(_kBuildingsLayer);
+    } catch (_) {}
+  }
+
+  Future<void> _applyBuildings3D({Color? color}) async {
+    final extrusionColor = color ?? const Color(0xFFB0BEC5);
+    try {
+      await _native.removeLayer(_kBuildingsLayer);
+    } catch (_) {}
+    await _native.addFillExtrusionLayer(
+      'composite',
+      _kBuildingsLayer,
+      FillExtrusionLayerProperties(
+        fillExtrusionColor: extrusionColor.toHexStringRGB(),
+        fillExtrusionHeight: ['get', 'height'],
+        fillExtrusionBase: ['get', 'min_height'],
+        fillExtrusionOpacity: 0.7,
+      ),
+      belowLayerId: 'road-label',
+      sourceLayer: 'building',
+    );
+  }
+
   void _disposeLine(int id) {
     final line = _lines.remove(id);
     if (line != null) _native.removeLine(line);
@@ -248,6 +450,7 @@ class GoodMapController extends ChangeNotifier {
     _markers.dispose();
     _popups.dispose();
     _polylines.dispose();
+    _heatmaps.dispose();
     super.dispose();
   }
 }

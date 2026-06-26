@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
 import '../good_map.dart';
+import '../heatmap/heatmap.dart';
 import '../markers/marker.dart';
 import '../popups/popup.dart';
 import 'globe_overlays.dart';
@@ -21,6 +22,7 @@ class GoodMapGlobe extends StatefulWidget {
     @Deprecated('Use markers instead') this.points = const [],
     this.popups = const [],
     this.arcs = const [],
+    this.heatmaps = const [],
     this.atmosphere = false,
     this.controls = const GoodControls(),
     this.globeZoomToFlat = 3.5,
@@ -30,6 +32,12 @@ class GoodMapGlobe extends StatefulWidget {
     this.transition = const Duration(milliseconds: 280),
     this.onTap,
     this.onSurfaceChanged,
+    this.showDottedGrid = false,
+    this.dottedGridColor,
+    this.dottedGridRadius = 1.2,
+    this.dateTime,
+    this.sunPosition,
+    this.timeRange,
     super.key,
   });
 
@@ -49,6 +57,10 @@ class GoodMapGlobe extends StatefulWidget {
   final List<PopupOptions> popups;
 
   final List<GlobeArc> arcs;
+
+  /// Heatmap layers rendered on the globe canvas.
+  final List<HeatmapOptions> heatmaps;
+
   final bool atmosphere;
   final GoodControls controls;
 
@@ -71,6 +83,24 @@ class GoodMapGlobe extends StatefulWidget {
 
   /// Called when the surface flips (true = flat map, false = globe).
   final void Function(bool isFlat)? onSurfaceChanged;
+
+  /// When true, draws the dotted world landmass grid on the globe surface.
+  final bool showDottedGrid;
+
+  /// Colour of the dotted grid dots.
+  final Color? dottedGridColor;
+
+  /// Radius of each dot on the globe. Default: 1.2.
+  final double dottedGridRadius;
+
+  /// Enables the day/night terminator on the globe surface.
+  final DateTime? dateTime;
+
+  /// Explicit subsolar point (lat/lng) for the day/night terminator.
+  final LatLng? sunPosition;
+
+  /// Time range `(start, end)` to filter markers and arcs on the globe.
+  final (double, double)? timeRange;
 
   @override
   State<GoodMapGlobe> createState() => _GoodMapGlobeState();
@@ -113,8 +143,15 @@ class _GoodMapGlobeState extends State<GoodMapGlobe> {
             points: widget.points,
             popups: widget.popups,
             arcs: widget.arcs,
+            heatmaps: widget.heatmaps,
             atmosphere: widget.atmosphere,
             onTap: widget.onTap,
+            showDottedGrid: widget.showDottedGrid,
+            dottedGridColor: widget.dottedGridColor,
+            dottedGridRadius: widget.dottedGridRadius,
+            dateTime: widget.dateTime,
+            sunPosition: widget.sunPosition,
+            timeRange: widget.timeRange,
             onCameraChanged: (center, zoom) {
               _center = center;
               if (zoom >= widget.globeZoomToFlat) _setFlat(true);

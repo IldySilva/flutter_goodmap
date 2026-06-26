@@ -92,6 +92,10 @@ class _DemoHomeState extends State<DemoHome> {
   PolylineId? _poiRoute;
   PolylineId? _ferryLine;
 
+  // v0.4.0 flat map features.
+  HeatmapId? _heatmap;
+  bool _buildings3D = false;
+
   @override
   void dispose() {
     _liveTimer?.cancel();
@@ -129,6 +133,57 @@ class _DemoHomeState extends State<DemoHome> {
       ),
     );
     _activePopup = id;
+  }
+
+  // --- Heatmap (v0.4.0) ---------------------------------------------------
+
+  void _toggleHeatmap() async {
+    final c = _controller;
+    if (c == null) return;
+    if (_heatmap != null) {
+      await c.removeHeatmap(_heatmap!);
+      setState(() => _heatmap = null);
+      return;
+    }
+    // A handful of SF landmarks as heatmap points.
+    const points = [
+      LatLng(37.8199, -122.4783), // Golden Gate Bridge
+      LatLng(37.7749, -122.4194), // City Hall
+      LatLng(37.7954, -122.3936), // Ferry Building
+      LatLng(37.8030, -122.4487), // Presidio
+      LatLng(37.7697, -122.4669), // Twin Peaks
+      LatLng(37.7608, -122.5093), // Ocean Beach
+      LatLng(37.7873, -122.4040), // Union Square
+      LatLng(37.7591, -122.4295), // Mission
+    ];
+    const weights = [0.95, 0.7, 0.8, 0.6, 0.75, 0.5, 0.85, 0.65];
+    final id = await c.addHeatmap(
+      const HeatmapOptions(points: points, weights: weights, radius: 30),
+    );
+    setState(() => _heatmap = id);
+  }
+
+  // --- 3D Buildings (v0.4.0) ----------------------------------------------
+
+  void _toggleBuildings3D() async {
+    final c = _controller;
+    if (c == null) return;
+    if (_buildings3D) {
+      await c.disableBuildings3D();
+      setState(() => _buildings3D = false);
+    } else {
+      // Zoom into the Financial District for best effect.
+      await c.animateTo(
+        const CameraPosition(
+          target: LatLng(37.7946, -122.3999),
+          zoom: 15.5,
+          tilt: 55,
+          bearing: 20,
+        ),
+      );
+      await c.enableBuildings3D();
+      setState(() => _buildings3D = true);
+    }
   }
 
   // --- Camera demos -------------------------------------------------------
@@ -304,6 +359,8 @@ class _DemoHomeState extends State<DemoHome> {
                   liveOn: _liveMarker != null,
                   glOn: _glPins.isNotEmpty,
                   routeOn: _poiRoute != null,
+                  heatmapOn: _heatmap != null,
+                  buildings3DOn: _buildings3D,
                   onFitAll: _fitAll,
                   onFlyToBridge: _flyToBridge,
                   onTilt: _tiltAndRotate,
@@ -311,6 +368,8 @@ class _DemoHomeState extends State<DemoHome> {
                   onToggleRoute: _togglePoiRoute,
                   onToggleLive: _toggleLiveMarker,
                   onToggleGl: _toggleGlPins,
+                  onToggleHeatmap: _toggleHeatmap,
+                  onToggleBuildings3D: _toggleBuildings3D,
                   onClearPopups: () {
                     _controller?.clearPopups();
                     _activePopup = null;
@@ -328,6 +387,8 @@ class _ControlPanel extends StatelessWidget {
     required this.liveOn,
     required this.glOn,
     required this.routeOn,
+    required this.heatmapOn,
+    required this.buildings3DOn,
     required this.onFitAll,
     required this.onFlyToBridge,
     required this.onTilt,
@@ -335,6 +396,8 @@ class _ControlPanel extends StatelessWidget {
     required this.onToggleRoute,
     required this.onToggleLive,
     required this.onToggleGl,
+    required this.onToggleHeatmap,
+    required this.onToggleBuildings3D,
     required this.onClearPopups,
   });
 
@@ -342,6 +405,8 @@ class _ControlPanel extends StatelessWidget {
   final bool liveOn;
   final bool glOn;
   final bool routeOn;
+  final bool heatmapOn;
+  final bool buildings3DOn;
   final VoidCallback onFitAll;
   final VoidCallback onFlyToBridge;
   final VoidCallback onTilt;
@@ -349,6 +414,8 @@ class _ControlPanel extends StatelessWidget {
   final VoidCallback onToggleRoute;
   final VoidCallback onToggleLive;
   final VoidCallback onToggleGl;
+  final VoidCallback onToggleHeatmap;
+  final VoidCallback onToggleBuildings3D;
   final VoidCallback onClearPopups;
 
   @override
@@ -411,6 +478,22 @@ class _ControlPanel extends StatelessWidget {
                       label: glOn ? 'Clear GL pins' : 'Drop GL pins',
                       selected: glOn,
                       onTap: enabled ? onToggleGl : null,
+                    ),
+                    _DemoButton(
+                      icon: heatmapOn
+                          ? Icons.thermostat_outlined
+                          : Icons.thermostat,
+                      label: heatmapOn ? 'Clear heatmap' : 'Heatmap',
+                      selected: heatmapOn,
+                      onTap: enabled ? onToggleHeatmap : null,
+                    ),
+                    _DemoButton(
+                      icon: buildings3DOn
+                          ? Icons.apartment
+                          : Icons.domain_outlined,
+                      label: buildings3DOn ? 'Hide 3D bldgs' : '3D buildings',
+                      selected: buildings3DOn,
+                      onTap: enabled ? onToggleBuildings3D : null,
                     ),
                     _DemoButton(
                       icon: Icons.close_fullscreen,

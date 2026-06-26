@@ -1,6 +1,9 @@
+// lib/src/globe/sphere_shader_painter.dart
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
 import 'detail_tile_atlas.dart';
 
@@ -24,7 +27,7 @@ class SphereShaderManager {
       );
       return true;
     } catch (e) {
-      // Fallback for running inside the package itself (tests/example by path).
+      // Fallback for running inside the package itself (tests/example by path)
       try {
         _program = await ui.FragmentProgram.fromAsset('shaders/sphere.frag');
         return true;
@@ -59,6 +62,8 @@ class SphereShaderPainter extends CustomPainter {
     required this.radius,
     required this.rotationX,
     required this.rotationZ,
+    this.sunDirection,
+    this.enableDayNight = false,
   });
 
   final ui.FragmentShader shader;
@@ -70,31 +75,44 @@ class SphereShaderPainter extends CustomPainter {
   final double rotationX;
   final double rotationZ;
 
+  /// Normalized sun direction vector in geographic (earth-centred) coordinates.
+  /// Computed via [sunDirectionVector] from a subsolar [LatLng].
+  final (double, double, double)? sunDirection;
+
+  /// When true, the shader applies the day/night terminator based on [sunDirection].
+  final bool enableDayNight;
+
   @override
   void paint(Canvas canvas, Size size) {
     if (radius <= 0 || !radius.isFinite) return;
     if (!size.width.isFinite || !size.height.isFinite) return;
 
     var i = 0;
-    shader.setFloat(i++, size.width);
-    shader.setFloat(i++, size.height);
-    shader.setFloat(i++, center.dx);
-    shader.setFloat(i++, center.dy);
-    shader.setFloat(i++, radius);
-    shader.setFloat(i++, rotationX);
-    shader.setFloat(i++, rotationZ);
+    shader.setFloat(i++, size.width);   // 0 uResolutionX
+    shader.setFloat(i++, size.height);  // 1 uResolutionY
+    shader.setFloat(i++, center.dx);    // 2 uCenterX
+    shader.setFloat(i++, center.dy);    // 3 uCenterY
+    shader.setFloat(i++, radius);       // 4 uRadius
+    shader.setFloat(i++, rotationX);    // 5 uRotationX
+    shader.setFloat(i++, rotationZ);    // 6 uRotationZ
 
-    // Bind dynamic detail bounds float uniforms.
+    // Detail atlas bounds + flag.
     final hasDetail = detailAtlas != null && detailBounds != null;
-    shader.setFloat(i++, hasDetail ? detailBounds!.minLon : 0.0);
-    shader.setFloat(i++, hasDetail ? detailBounds!.maxLon : 0.0);
-    shader.setFloat(i++, hasDetail ? detailBounds!.minLat : 0.0);
-    shader.setFloat(i++, hasDetail ? detailBounds!.maxLat : 0.0);
-    shader.setFloat(i++, hasDetail ? 1.0 : 0.0);
+    shader.setFloat(i++, hasDetail ? detailBounds!.minLon : 0.0); // 7
+    shader.setFloat(i++, hasDetail ? detailBounds!.maxLon : 0.0); // 8
+    shader.setFloat(i++, hasDetail ? detailBounds!.minLat : 0.0); // 9
+    shader.setFloat(i++, hasDetail ? detailBounds!.maxLat : 0.0); // 10
+    shader.setFloat(i++, hasDetail ? 1.0 : 0.0);                  // 11
 
-    // Bind texture samplers:
-    // Slot 0: base world atlas
-    // Slot 1: detail high-res atlas (fallback to base atlas if none loaded to prevent GL crashes)
+    // Day/night terminator (indices 12-15).
+    final dir =
+        enableDayNight && sunDirection != null ? sunDirection! : (0.0, 0.0, 0.0);
+    shader.setFloat(i++, dir.$1);                          // 12 uSunDirX
+    shader.setFloat(i++, dir.$2);                          // 13 uSunDirY
+    shader.setFloat(i++, dir.$3);                          // 14 uSunDirZ
+    shader.setFloat(i++, enableDayNight ? 1.0 : 0.0);     // 15 uEnableDayNight
+
+    // Texture samplers.
     shader.setImageSampler(0, baseAtlas);
     shader.setImageSampler(1, hasDetail ? detailAtlas! : baseAtlas);
 
@@ -111,5 +129,46 @@ class SphereShaderPainter extends CustomPainter {
       old.center != center ||
       old.radius != radius ||
       old.rotationX != rotationX ||
-      old.rotationZ != rotationZ;
+      old.rotationZ != rotationZ ||
+      old.sunDirection != sunDirection ||
+      old.enableDayNight != enableDayNight;
+
+  // ---------------------------------------------------------------------------
+  // Static helpers for sun-position astronomy.
+  // ---------------------------------------------------------------------------
+
+  /// Computes the subsolar point (lat/lng in degrees where the sun is directly
+  /// overhead) from a UTC [dateTime] using an approximate solar formula.
+  ///
+  /// Accuracy is ~1–2° which is sufficient for the visual terminator effect.
+  static LatLng sunPositionFromDateTime(DateTime dateTime) {
+    final utc = dateTime.toUtc();
+    // Day of year (1-based).
+    final startOfYear = DateTime.utc(utc.year);
+    final dayOfYear = utc.difference(startOfYear).inDays + 1;
+
+    // Solar declination (degrees): ranges ±23.45°, peaking at summer solstice.
+    final declDeg =
+        -23.45 * math.cos(2 * math.pi / 365.0 * (dayOfYear + 10));
+
+    // Subsolar longitude: the sun is at longitude 0° at 12:00 UTC.
+    final hourDecimal =
+        utc.hour + utc.minute / 60.0 + utc.second / 3600.0;
+    final subLng = (12.0 - hourDecimal) * 15.0;
+
+    return LatLng(declDeg, subLng);
+  }
+
+  /// Converts a geographic subsolar point [sunPos] (latitude/longitude in
+  /// degrees) to a normalized direction vector in earth-centred geographic
+  /// coordinates suitable for the day/night shader uniforms.
+  static (double, double, double) sunDirectionVector(LatLng sunPos) {
+    final lat = sunPos.latitude * math.pi / 180;
+    final lng = sunPos.longitude * math.pi / 180;
+    return (
+      math.cos(lat) * math.cos(lng), // X
+      math.cos(lat) * math.sin(lng), // Y
+      math.sin(lat),                 // Z
+    );
+  }
 }

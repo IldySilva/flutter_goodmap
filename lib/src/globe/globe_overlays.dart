@@ -1,13 +1,21 @@
+// lib/src/globe/globe_overlays.dart
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
+import '../heatmap/heatmap.dart';
 import '../markers/marker.dart';
 import 'sphere_projection.dart';
-
+import 'world_land_dots.dart';
 
 /// A great-circle arc between two coordinates, bowing off the globe surface.
+///
+/// **Draw-in animation** — set [drawProgress] (0..1) to draw only a fraction of
+/// the arc. Animate this value externally to get a line-drawing effect.
+///
+/// **Time-series** — set [timestamp] so that the globe's `timeRange` filter can
+/// show/hide this arc dynamically.
 @immutable
 class GlobeArc {
   const GlobeArc({
@@ -18,6 +26,8 @@ class GlobeArc {
     this.dashed = true,
     this.bend = 0.35,
     this.segments = 72,
+    this.drawProgress = 1.0,
+    this.timestamp,
   });
 
   final LatLng from;
@@ -29,35 +39,129 @@ class GlobeArc {
   /// How far the arc lifts off the surface at its midpoint (fraction of radius).
   final double bend;
   final int segments;
+
+  /// Fraction [0, 1] of the arc to draw. 0 = nothing, 1 = full arc.
+  /// Animate from 0→1 to produce a line-drawing effect.
+  final double drawProgress;
+
+  /// Optional timestamp for time-series filtering via [GoodGlobe.timeRange].
+  final double? timestamp;
 }
 
-/// Paints arcs, points and labels over the globe, hiding anything on the far
-/// hemisphere. Re-created each frame with the current [projection].
+/// Paints arcs, points, labels, heatmaps and an optional dotted world grid over
+/// the globe, hiding anything on the far hemisphere. Re-created each frame with
+/// the current [projection].
 class GlobeOverlayPainter extends CustomPainter {
   GlobeOverlayPainter({
     required this.projection,
     required this.arcs,
     required this.markers,
     this.dashAnimation,
+    this.showDottedGrid = false,
+    this.dottedGridColor,
+    this.dottedGridRadius = 1.2,
+    this.heatmaps = const [],
   }) : super(repaint: dashAnimation);
 
   final SphereProjection projection;
   final List<GlobeArc> arcs;
   final List<MarkerOptions> markers;
 
-  /// Drives the marching-dash phase (0..1, repeating). Null = static dashes.
+  /// Drives the marching-dash phase (0..1, repeating). Also drives pulse
+  /// ring animations when markers have [MarkerOptions.pulse] enabled.
   final Animation<double>? dashAnimation;
+
+  /// When true, draws the dotted world landmass grid.
+  final bool showDottedGrid;
+
+  /// Colour of the dotted grid dots. Defaults to 35% black.
+  final Color? dottedGridColor;
+
+  /// Radius of each grid dot in logical pixels. Default: 1.2.
+  final double dottedGridRadius;
+
+  /// Heatmaps to render on the globe canvas as radial gradient blobs.
+  final List<HeatmapOptions> heatmaps;
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Dotted world grid (bottom-most overlay layer)
+    if (showDottedGrid) {
+      _paintDottedGrid(canvas);
+    }
+
+    // Heatmap blobs
+    for (final heatmap in heatmaps) {
+      _paintHeatmap(canvas, heatmap);
+    }
+
     final phase = dashAnimation?.value ?? 0.0;
+
+    // Arcs (drawn before markers so markers are on top)
     for (final arc in arcs) {
       _paintArc(canvas, arc, phase);
     }
+
+    // Points / markers
     for (final marker in markers) {
-      _paintPoint(canvas, marker);
+      _paintPoint(canvas, marker, phase);
     }
   }
+
+  // --- Dotted grid ---------------------------------------------------------
+
+  void _paintDottedGrid(Canvas canvas) {
+    final color = dottedGridColor ?? const Color(0x59000000);
+    final paint = Paint()
+      ..color = color
+      ..isAntiAlias = true
+      ..style = PaintingStyle.fill;
+    for (final latLng in kWorldLandDots) {
+      final screen = projection.project(latLng);
+      if (screen == null) continue;
+      canvas.drawCircle(screen, dottedGridRadius, paint);
+    }
+  }
+
+  // --- Heatmap -------------------------------------------------------------
+
+  void _paintHeatmap(Canvas canvas, HeatmapOptions heatmap) {
+    for (var idx = 0; idx < heatmap.points.length; idx++) {
+      final screen = projection.project(heatmap.points[idx]);
+      if (screen == null) continue;
+
+      final w = (heatmap.weights != null && idx < heatmap.weights!.length)
+          ? heatmap.weights![idx].clamp(0.0, 1.0)
+          : 1.0;
+
+      final r = heatmap.radius * (0.4 + 0.6 * w);
+
+      // Colour ramp: blue (w=0) → cyan → lime → yellow → red (w=1)
+      final hue = (1.0 - w) * 240.0;
+      final opacity =
+          (heatmap.intensity * w * 0.65 * heatmap.opacity).clamp(0.0, 1.0);
+      final coreColor =
+          HSVColor.fromAHSV(opacity, hue, 0.85, 1.0).toColor();
+
+      canvas.drawCircle(
+        screen,
+        r,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [
+              coreColor,
+              coreColor.withValues(alpha: opacity * 0.35),
+              coreColor.withValues(alpha: 0),
+            ],
+            stops: const [0.0, 0.45, 1.0],
+          ).createShader(Rect.fromCircle(center: screen, radius: r))
+          ..blendMode = BlendMode.screen
+          ..isAntiAlias = true,
+      );
+    }
+  }
+
+  // --- Arcs ----------------------------------------------------------------
 
   void _paintArc(Canvas canvas, GlobeArc arc, double phase) {
     final a = SphereProjection.latLngUnit(arc.from);
@@ -78,6 +182,8 @@ class GlobeOverlayPainter extends CustomPainter {
     Path? run;
     for (var i = 0; i <= arc.segments; i++) {
       final t = i / arc.segments;
+      // Honour drawProgress: stop drawing beyond the fraction requested.
+      if (t > arc.drawProgress) break;
       final dir = _slerp(a, b, t, omega, sinOmega);
       final lift = 1.0 + arc.bend * math.sin(t * math.pi);
       final p = projection.projectDirection(dir, lift);
@@ -118,19 +224,38 @@ class GlobeOverlayPainter extends CustomPainter {
     }
   }
 
-  void _paintPoint(Canvas canvas, MarkerOptions marker) {
+  // --- Points / markers ----------------------------------------------------
+
+  void _paintPoint(Canvas canvas, MarkerOptions marker, double animValue) {
     final screen = projection.project(marker.position);
     if (screen == null) return; // behind the globe
 
-    final radius = marker.radius ?? 4.0;
+    final baseR = marker.radius ?? 4.0;
     final color = marker.color ?? const Color(0xFF4F86F7);
 
+    // Pulse ring (uses the same animation ticker as marching dashes)
+    if (marker.pulse) {
+      final maxR = marker.pulseMaxRadius ?? (baseR * 5.0).clamp(12.0, 30.0);
+      final pulseR = baseR + animValue * (maxR - baseR);
+      final pulseAlpha = (1.0 - animValue).clamp(0.0, 1.0) * 0.55;
+      canvas.drawCircle(
+        screen,
+        pulseR,
+        Paint()
+          ..color = color.withValues(alpha: pulseAlpha)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5
+          ..isAntiAlias = true,
+      );
+    }
+
+    // Filled dot with white halo
     canvas.drawCircle(
       screen,
-      radius + 2,
+      baseR + 2,
       Paint()..color = Colors.white.withValues(alpha: 0.9),
     );
-    canvas.drawCircle(screen, radius, Paint()..color = color);
+    canvas.drawCircle(screen, baseR, Paint()..color = color);
 
     final label = marker.label;
     if (label != null) {
@@ -148,7 +273,7 @@ class GlobeOverlayPainter extends CustomPainter {
       )..layout();
       tp.paint(
         canvas,
-        Offset(screen.dx - tp.width / 2, screen.dy - radius - tp.height - 4),
+        Offset(screen.dx - tp.width / 2, screen.dy - baseR - tp.height - 4),
       );
     }
   }
@@ -169,7 +294,11 @@ class GlobeOverlayPainter extends CustomPainter {
   bool shouldRepaint(GlobeOverlayPainter old) =>
       old.projection != projection ||
       old.arcs != arcs ||
-      old.markers != markers;
+      old.markers != markers ||
+      old.showDottedGrid != showDottedGrid ||
+      old.dottedGridColor != dottedGridColor ||
+      old.dottedGridRadius != dottedGridRadius ||
+      old.heatmaps != heatmaps;
 }
 
 /// A soft glow ring around the globe silhouette. Drawn behind the sphere so only

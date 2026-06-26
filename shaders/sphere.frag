@@ -17,6 +17,11 @@ uniform float uDetailMaxLon;
 uniform float uDetailMinLat;
 uniform float uDetailMaxLat;
 uniform float uHasDetail;
+// Day/night terminator uniforms (indices 12-15).
+uniform float uSunDirX;       // Sun direction in geographic coords (X)
+uniform float uSunDirY;       // Sun direction in geographic coords (Y)
+uniform float uSunDirZ;       // Sun direction in geographic coords (Z)
+uniform float uEnableDayNight; // 1.0 = enabled, 0.0 = disabled
 
 uniform sampler2D uTexture;       // base world atlas
 uniform sampler2D uDetailTexture;  // high-res detail atlas
@@ -99,6 +104,25 @@ void main() {
     uv.x = (lon + PI) / TWO_PI;     // -180..180 -> 0..1
     uv.y = (HALF_PI - lat) / PI;    // 90..-90 -> 0..1
     color = texture(uTexture, uv);
+  }
+
+  // Day / Night Terminator ------------------------------------------------
+  // Darkens the night side of the globe based on the solar angle.
+  // uSunDir is the sun's unit direction in geographic (earth-centred) coords:
+  //   x = cos(decl)*cos(subLon), y = cos(decl)*sin(subLon), z = sin(decl)
+  if (uEnableDayNight > 0.5) {
+    // Surface normal at (lat, lon) in geographic coords.
+    vec3 surfaceNormal = vec3(cos(lat) * cos(lon),
+                              cos(lat) * sin(lon),
+                              sin(lat));
+    vec3 sunDir = normalize(vec3(uSunDirX, uSunDirY, uSunDirZ));
+    float dotSun = dot(surfaceNormal, sunDir);
+
+    // Smooth twilight band (~11 degrees wide either side of the terminator).
+    float daylight = smoothstep(-0.11, 0.11, dotSun);
+
+    // 20% ambient on the night side so landmasses are still faintly visible.
+    color.rgb *= (0.20 + 0.80 * daylight);
   }
 
   // Premultiplied alpha for clean compositing at the AA edge.

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
+import '../heatmap/heatmap.dart';
 import '../markers/marker.dart';
 import '../popups/popup.dart';
 import 'detail_tile_atlas.dart';
@@ -25,11 +26,18 @@ class GoodGlobe extends StatefulWidget {
     @Deprecated('Use markers instead') this.points = const [],
     this.arcs = const [],
     this.popups = const [],
+    this.heatmaps = const [],
     this.atmosphere = false,
     this.atmosphereColor,
     this.onCameraChanged,
     this.onTap,
     this.onPointTap,
+    this.showDottedGrid = false,
+    this.dottedGridColor,
+    this.dottedGridRadius = 1.2,
+    this.dateTime,
+    this.sunPosition,
+    this.timeRange,
     super.key,
     @visibleForTesting this.renderEnabled = true,
   });
@@ -50,6 +58,9 @@ class GoodGlobe extends StatefulWidget {
   /// Great-circle arcs drawn between coordinates.
   final List<GlobeArc> arcs;
 
+  /// Heatmap layers rendered on the globe canvas.
+  final List<HeatmapOptions> heatmaps;
+
   /// Draws a soft atmospheric glow ring around the globe. Off by default.
   final bool atmosphere;
 
@@ -66,6 +77,33 @@ class GoodGlobe extends StatefulWidget {
   /// Called when a marker/point is tapped. The globe also shows a small popup
   /// card for the tapped point automatically.
   final void Function(MarkerOptions marker)? onPointTap;
+
+  /// When true, draws the dotted world landmass grid on the globe canvas.
+  final bool showDottedGrid;
+
+  /// Colour of the dotted grid. Defaults to semi-transparent black / white
+  /// depending on the theme if null.
+  final Color? dottedGridColor;
+
+  /// Radius of each dot on the globe. Default: 1.2.
+  final double dottedGridRadius;
+
+  /// When set, enables the day/night terminator using the sun's position
+  /// computed from this UTC date/time. Takes precedence over [sunPosition] when
+  /// both are provided.
+  ///
+  /// For a live clock effect, pass `DateTime.now()` from a `Timer.periodic` in
+  /// the host widget.
+  final DateTime? dateTime;
+
+  /// Explicit subsolar point (latitude/longitude where the sun is directly
+  /// overhead). Use instead of [dateTime] when you want full control.
+  final LatLng? sunPosition;
+
+  /// Time range `(start, end)` for filtering markers and arcs by their
+  /// [MarkerOptions.timestamp] / [GlobeArc.timestamp] fields.
+  /// Items without a timestamp are always shown.
+  final (double, double)? timeRange;
 
   /// When false (tests), GPU shader/atlas and the inertia ticker are skipped.
   final bool renderEnabled;
@@ -118,9 +156,35 @@ class _GoodGlobeState extends State<GoodGlobe>
         ...widget.points,
       ];
 
-  List<MarkerOptions> get _canvasMarkers => _allMarkers
+  /// All markers filtered by the current [widget.timeRange].
+  List<MarkerOptions> get _filteredMarkers {
+    final range = widget.timeRange;
+    if (range == null) return _allMarkers;
+    return _allMarkers.where((m) {
+      final t = m.timestamp;
+      return t == null || (t >= range.$1 && t <= range.$2);
+    }).toList();
+  }
+
+  /// Canvas-only markers (no child widget / image asset), after time filtering.
+  List<MarkerOptions> get _canvasMarkers => _filteredMarkers
       .where((m) => m.child == null && m.image == null)
       .toList();
+
+  /// Arcs filtered by the current [widget.timeRange].
+  List<GlobeArc> get _filteredArcs {
+    final range = widget.timeRange;
+    if (range == null) return widget.arcs;
+    return widget.arcs.where((a) {
+      final t = a.timestamp;
+      return t == null || (t >= range.$1 && t <= range.$2);
+    }).toList();
+  }
+
+  /// Whether the dash/pulse animation ticker needs to run.
+  bool get _needsDashAnimation =>
+      widget.renderEnabled &&
+      (_filteredArcs.isNotEmpty || _allMarkers.any((m) => m.pulse));
 
   @override
   void initState() {
@@ -133,10 +197,21 @@ class _GoodGlobeState extends State<GoodGlobe>
     _rotationZ = widget.initialCenter.longitude * math.pi / 180.0;
     _zoom = widget.initialZoom;
     if (widget.renderEnabled) {
-      if (widget.arcs.isNotEmpty) _dash.repeat();
+      if (_needsDashAnimation) _dash.repeat();
       _shaderManager.load().then((ok) {
         if (ok && mounted) _rebuildShader();
       });
+    }
+  }
+
+  @override
+  void didUpdateWidget(GoodGlobe oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.renderEnabled) return;
+    if (_needsDashAnimation) {
+      if (!_dash.isAnimating) _dash.repeat();
+    } else {
+      if (_dash.isAnimating) _dash.stop();
     }
   }
 
@@ -440,10 +515,25 @@ class _GoodGlobeState extends State<GoodGlobe>
             rotationZ: _rotationZ,
           );
           final canvasMarkers = _canvasMarkers;
-          final allMarkers = _allMarkers;
+          final allMarkers = _filteredMarkers;
+          final filteredArcs = _filteredArcs;
           final selected = _selectedMarker;
           final selectedScreen =
               selected == null ? null : projection.project(selected.position);
+
+          // Sun direction for the day/night shader.
+          final enableDayNight =
+              widget.sunPosition != null || widget.dateTime != null;
+          final (double, double, double)? sunDir = () {
+            final sp = widget.sunPosition ??
+                (widget.dateTime != null
+                    ? SphereShaderPainter.sunPositionFromDateTime(
+                        widget.dateTime!)
+                    : null);
+            return sp != null
+                ? SphereShaderPainter.sunDirectionVector(sp)
+                : null;
+          }();
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -473,17 +563,26 @@ class _GoodGlobeState extends State<GoodGlobe>
                     radius: radius,
                     rotationX: _rotationX,
                     rotationZ: _rotationZ,
+                    sunDirection: sunDir,
+                    enableDayNight: enableDayNight,
                   ),
                 ),
-              if (widget.arcs.isNotEmpty || canvasMarkers.isNotEmpty)
+              if (filteredArcs.isNotEmpty ||
+                  canvasMarkers.isNotEmpty ||
+                  widget.showDottedGrid ||
+                  widget.heatmaps.isNotEmpty)
                 IgnorePointer(
                   child: CustomPaint(
                     size: Size.infinite,
                     painter: GlobeOverlayPainter(
                       projection: projection,
-                      arcs: widget.arcs,
+                      arcs: filteredArcs,
                       markers: canvasMarkers,
                       dashAnimation: _dash,
+                      showDottedGrid: widget.showDottedGrid,
+                      dottedGridColor: widget.dottedGridColor,
+                      dottedGridRadius: widget.dottedGridRadius,
+                      heatmaps: widget.heatmaps,
                     ),
                   ),
                 ),

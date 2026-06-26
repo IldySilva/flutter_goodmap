@@ -1,6 +1,26 @@
 # Changelog
 
+## 0.4.0
+
+Data visualization & richness.
+
+### Dotted World Map ("pointed map")
+- **`GoodGlobe.showDottedGrid`** — draws a stylized dotted landmass grid (1,710 pre-computed points from a diagonal dot-map grid) on the globe canvas using `GlobeOverlayPainter`. Configurable dot colour (`dottedGridColor`) and radius (`dottedGridRadius`).
+- **`GoodMapGlobe.showDottedGrid`** — threads the same props through the hybrid globe→flat widget.
+- **`GoodMapController.enableDottedGrid()`** / **`disableDottedGrid()`** — renders the same grid on the flat map as a native MapLibre `circle` layer sourced from a GeoJSON `FeatureCollection`.
+- **`world_land_dots.dart`** — internal file with the pre-compiled `kWorldLandDots` constant; generated with `dotted-map` (height: 45, diagonal grid).
+
+### Heatmaps
+- **`GoodMapController.addHeatmap(HeatmapOptions)`** — adds a heatmap layer backed by a native MapLibre `heatmap` paint layer on a generated GeoJSON source. Returns a `HeatmapId`.
+- **`updateHeatmap`**, **`removeHeatmap`**, **`clearHeatmaps`** — full lifecycle management.
+- **`HeatmapOptions`** — points, per-point weights, radius, intensity, opacity, and custom gradient ramp.
+- **`HeatmapId`** — opaque typed handle.
+
+### 3D Building Extrusions (flat map)
+- **`GoodMapController.enableBuildings3D()`** / **`disableBuildings3D()`** — inserts a native `fill-extrusion` layer on the `building` source layer using height/min\_height fields from the active basemap, re-applied automatically after theme changes.
+
 ## 0.3.0
+
 
 Windowed Per-Region Level of Detail (LOD) on the 3D globe.
 
