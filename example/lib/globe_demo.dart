@@ -17,22 +17,33 @@ const _cities = <(String, LatLng)>[
 ];
 
 final _heatmapPoints = <LatLng>[
-  LatLng(51.5, -0.1),   // London
-  LatLng(48.9, 2.35),   // Paris
-  LatLng(52.5, 13.4),   // Berlin
-  LatLng(40.7, -74.0),  // New York
+  LatLng(51.5, -0.1), // London
+  LatLng(48.9, 2.35), // Paris
+  LatLng(52.5, 13.4), // Berlin
+  LatLng(40.7, -74.0), // New York
   LatLng(34.0, -118.2), // LA
   LatLng(37.8, -122.4), // SF
-  LatLng(35.7, 139.7),  // Tokyo
-  LatLng(31.2, 121.5),  // Shanghai
+  LatLng(35.7, 139.7), // Tokyo
+  LatLng(31.2, 121.5), // Shanghai
   LatLng(-33.9, 151.2), // Sydney
   LatLng(-23.5, -46.6), // São Paulo
-  LatLng(19.1, 72.9),   // Mumbai
-  LatLng(1.35, 103.8),  // Singapore
+  LatLng(19.1, 72.9), // Mumbai
+  LatLng(1.35, 103.8), // Singapore
 ];
 
 final _heatmapWeights = <double>[
-  0.9, 0.7, 0.5, 1.0, 0.8, 0.6, 0.95, 0.85, 0.4, 0.75, 0.7, 0.65,
+  0.9,
+  0.7,
+  0.5,
+  1.0,
+  0.8,
+  0.6,
+  0.95,
+  0.85,
+  0.4,
+  0.75,
+  0.7,
+  0.65,
 ];
 
 /// The globe surface of the example app (Angola → world arcs).
@@ -82,41 +93,42 @@ class _GlobeDemoState extends State<GlobeDemo> {
   List<GlobeArc> get _filteredArcs {
     final List<GlobeArc> arcs = [];
     for (var i = 0; i < _cities.length; i++) {
-      arcs.add(GlobeArc(
-        from: _luanda,
-        to: _cities[i].$2,
-        drawProgress: 1.0,
-        timestamp: i.toDouble(),
-        dashed: true,
-      ));
+      arcs.add(
+        GlobeArc(
+          from: _luanda,
+          to: _cities[i].$2,
+          drawProgress: 1.0,
+          timestamp: i.toDouble(),
+          dashed: true,
+        ),
+      );
     }
     return arcs;
   }
 
   List<MarkerOptions> get _markers => [
-        const MarkerOptions(
-          position: _luanda,
-          label: 'Luanda',
-          color: Colors.white,
-          radius: 6,
-          pulse: true,
-          pulseMaxRadius: 22,
-        ),
-        for (final c in _cities)
-          MarkerOptions(
-            position: c.$2,
-            label: c.$1,
-            color: const Color(0xFF4F86F7),
-            timestamp: _cities.indexOf(c).toDouble(),
-          ),
-      ];
+    const MarkerOptions(
+      position: _luanda,
+      label: 'Luanda',
+      color: Colors.white,
+      radius: 6,
+      pulse: true,
+      pulseMaxRadius: 22,
+    ),
+    for (final c in _cities)
+      MarkerOptions(
+        position: c.$2,
+        label: c.$1,
+        color: const Color(0xFF4F86F7),
+        timestamp: _cities.indexOf(c).toDouble(),
+      ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final (double, double)? range =
-        _showTimeSlider ? (0.0, _timeSlider) : null;
+    final (double, double)? range = _showTimeSlider ? (0.0, _timeSlider) : null;
 
     return Stack(
       children: [
@@ -160,7 +172,8 @@ class _GlobeDemoState extends State<GlobeDemo> {
                   icon: Icons.grain,
                   label: 'Dotted map',
                   active: _showDottedGrid,
-                  onTap: () => setState(() => _showDottedGrid = !_showDottedGrid),
+                  onTap: () =>
+                      setState(() => _showDottedGrid = !_showDottedGrid),
                 ),
                 _ToggleChip(
                   icon: Icons.thermostat,
@@ -178,7 +191,8 @@ class _GlobeDemoState extends State<GlobeDemo> {
                   icon: Icons.timeline,
                   label: 'Time filter',
                   active: _showTimeSlider,
-                  onTap: () => setState(() => _showTimeSlider = !_showTimeSlider),
+                  onTap: () =>
+                      setState(() => _showTimeSlider = !_showTimeSlider),
                 ),
               ],
             ),
@@ -260,11 +274,7 @@ class _ToggleChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: active ? cs.onPrimary : cs.onSurface,
-            ),
+            Icon(icon, size: 16, color: active ? cs.onPrimary : cs.onSurface),
             const SizedBox(width: 6),
             Text(
               label,

@@ -97,8 +97,52 @@ GoodMap(
 - **Markers:** `addMarker`, `updateMarker`, `removeMarker`, `clearMarkers`
 - **Popups:** `showPopup`, `hidePopup`, `clearPopups`
 - **Polylines:** `addPolyline`, `removePolyline`, `clearPolylines`
+- **Dotted Grid:** `enableDottedGrid`, `disableDottedGrid`
+- **Heatmaps:** `addHeatmap`, `updateHeatmap`, `removeHeatmap`, `clearHeatmaps`
 
 Both surfaces follow `Theme.of(context).brightness` (CARTO positron / dark-matter).
+
+## Dotted World Map ("pointed map")
+
+You can draw a stylized dotted landmass grid on both the 3D globe and the flat map:
+
+```dart
+// On the Globe or Hybrid surface (declarative):
+GoodGlobe(
+  initialCenter: const LatLng(0, 0),
+  showDottedGrid: true,
+  dottedGridColor: Colors.grey.withOpacity(0.3),
+  dottedGridRadius: 1.2,
+)
+```
+
+## Heatmaps
+
+Plot geographic density heatmaps on both surfaces:
+
+```dart
+// On the Globe surface (declarative):
+GoodGlobe(
+  initialCenter: const LatLng(0, 0),
+  heatmaps: [
+    HeatmapOptions(
+      points: const [LatLng(37.77, -122.42), LatLng(37.80, -122.45)],
+      weights: const [1.0, 0.5], // Optional relative weights (0.0 to 1.0)
+      radius: 20.0,        // Radius of influence in pixels
+    ),
+  ],
+)
+
+// On the Flat Map (via controller):
+final heatmapId = await controller.addHeatmap(
+  HeatmapOptions(
+    points: const [LatLng(37.77, -122.42), LatLng(37.80, -122.45)],
+    weights: const [1.0, 0.5],
+    radius: 30.0,
+  ),
+);
+await controller.removeHeatmap(heatmapId);
+```
 
 ## Basemap terms
 

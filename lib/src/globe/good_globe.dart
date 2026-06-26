@@ -112,8 +112,7 @@ class GoodGlobe extends StatefulWidget {
   State<GoodGlobe> createState() => _GoodGlobeState();
 }
 
-class _GoodGlobeState extends State<GoodGlobe>
-    with TickerProviderStateMixin {
+class _GoodGlobeState extends State<GoodGlobe> with TickerProviderStateMixin {
   final SphereShaderManager _shaderManager = SphereShaderManager();
 
   // Drives marching-dash animation on arcs.
@@ -151,10 +150,7 @@ class _GoodGlobeState extends State<GoodGlobe>
 
   double _sensitivity() => 0.005 / math.pow(2.0, _zoom - 1.0);
 
-  List<MarkerOptions> get _allMarkers => [
-        ...widget.markers,
-        ...widget.points,
-      ];
+  List<MarkerOptions> get _allMarkers => [...widget.markers, ...widget.points];
 
   /// All markers filtered by the current [widget.timeRange].
   List<MarkerOptions> get _filteredMarkers {
@@ -167,9 +163,10 @@ class _GoodGlobeState extends State<GoodGlobe>
   }
 
   /// Canvas-only markers (no child widget / image asset), after time filtering.
-  List<MarkerOptions> get _canvasMarkers => _filteredMarkers
-      .where((m) => m.child == null && m.image == null)
-      .toList();
+  List<MarkerOptions> get _canvasMarkers =>
+      _filteredMarkers
+          .where((m) => m.child == null && m.image == null)
+          .toList();
 
   /// Arcs filtered by the current [widget.timeRange].
   List<GlobeArc> get _filteredArcs {
@@ -448,7 +445,10 @@ class _GoodGlobeState extends State<GoodGlobe>
     super.dispose();
   }
 
-  Iterable<Widget> _buildMarkerOverlay(MarkerOptions marker, SphereProjection proj) {
+  Iterable<Widget> _buildMarkerOverlay(
+    MarkerOptions marker,
+    SphereProjection proj,
+  ) {
     final screen = proj.project(marker.position);
     if (screen == null) return const [];
     return [
@@ -456,14 +456,18 @@ class _GoodGlobeState extends State<GoodGlobe>
         left: screen.dx,
         top: screen.dy,
         child: FractionalTranslation(
-          translation: Offset(-(marker.alignment.x + 1) / 2, -(marker.alignment.y + 1) / 2),
-          child: marker.onTap == null
-              ? _markerChild(marker)
-              : GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: marker.onTap,
-                  child: _markerChild(marker),
-                ),
+          translation: Offset(
+            -(marker.alignment.x + 1) / 2,
+            -(marker.alignment.y + 1) / 2,
+          ),
+          child:
+              marker.onTap == null
+                  ? _markerChild(marker)
+                  : GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: marker.onTap,
+                    child: _markerChild(marker),
+                  ),
         ),
       ),
     ];
@@ -479,7 +483,10 @@ class _GoodGlobeState extends State<GoodGlobe>
     );
   }
 
-  Iterable<Widget> _buildPopupOverlay(PopupOptions popup, SphereProjection proj) {
+  Iterable<Widget> _buildPopupOverlay(
+    PopupOptions popup,
+    SphereProjection proj,
+  ) {
     final screen = proj.project(popup.position);
     if (screen == null) return const [];
     return [
@@ -487,7 +494,10 @@ class _GoodGlobeState extends State<GoodGlobe>
         left: screen.dx,
         top: screen.dy,
         child: FractionalTranslation(
-          translation: Offset(-(popup.alignment.x + 1) / 2, -(popup.alignment.y + 1) / 2),
+          translation: Offset(
+            -(popup.alignment.x + 1) / 2,
+            -(popup.alignment.y + 1) / 2,
+          ),
           child: popup.child,
         ),
       ),
@@ -525,10 +535,12 @@ class _GoodGlobeState extends State<GoodGlobe>
           final enableDayNight =
               widget.sunPosition != null || widget.dateTime != null;
           final (double, double, double)? sunDir = () {
-            final sp = widget.sunPosition ??
+            final sp =
+                widget.sunPosition ??
                 (widget.dateTime != null
                     ? SphereShaderPainter.sunPositionFromDateTime(
-                        widget.dateTime!)
+                      widget.dateTime!,
+                    )
                     : null);
             return sp != null
                 ? SphereShaderPainter.sunDirectionVector(sp)
@@ -547,7 +559,8 @@ class _GoodGlobeState extends State<GoodGlobe>
                   painter: AtmospherePainter(
                     center: center,
                     radius: radius,
-                    color: widget.atmosphereColor ??
+                    color:
+                        widget.atmosphereColor ??
                         Theme.of(context).colorScheme.primary,
                   ),
                 ),
@@ -596,7 +609,9 @@ class _GoodGlobeState extends State<GoodGlobe>
                 ..._buildPopupOverlay(popup, projection),
 
               // Popup card for a tapped point — follows it, hides when occluded.
-              if (selected != null && selectedScreen != null && selected.label != null)
+              if (selected != null &&
+                  selectedScreen != null &&
+                  selected.label != null)
                 Positioned(
                   left: selectedScreen.dx - 90,
                   top: selectedScreen.dy - 56,

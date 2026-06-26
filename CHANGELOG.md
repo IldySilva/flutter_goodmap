@@ -7,7 +7,6 @@ Data visualization & richness.
 ### Dotted World Map ("pointed map")
 - **`GoodGlobe.showDottedGrid`** — draws a stylized dotted landmass grid (1,710 pre-computed points from a diagonal dot-map grid) on the globe canvas using `GlobeOverlayPainter`. Configurable dot colour (`dottedGridColor`) and radius (`dottedGridRadius`).
 - **`GoodMapGlobe.showDottedGrid`** — threads the same props through the hybrid globe→flat widget.
-- **`GoodMapController.enableDottedGrid()`** / **`disableDottedGrid()`** — renders the same grid on the flat map as a native MapLibre `circle` layer sourced from a GeoJSON `FeatureCollection`.
 - **`world_land_dots.dart`** — internal file with the pre-compiled `kWorldLandDots` constant; generated with `dotted-map` (height: 45, diagonal grid).
 
 ### Heatmaps

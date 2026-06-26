@@ -14,6 +14,8 @@ GoodMapBuilder testMapBuilder(
   MapLibreMapController native, {
   void Function(String style)? onStyle,
 }) {
+  String? lastStyle;
+  bool mapCreated = false;
   return ({
     required String styleString,
     required CameraPosition initialCameraPosition,
@@ -23,8 +25,14 @@ GoodMapBuilder testMapBuilder(
   }) {
     onStyle?.call(styleString);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      onMapCreated(native);
-      onStyleLoaded();
+      if (!mapCreated) {
+        mapCreated = true;
+        onMapCreated(native);
+      }
+      if (lastStyle != styleString) {
+        lastStyle = styleString;
+        onStyleLoaded();
+      }
     });
     return const SizedBox.expand();
   };
@@ -33,6 +41,10 @@ GoodMapBuilder testMapBuilder(
 class _FallbackSymbol extends Fake implements Symbol {}
 
 class _FallbackLine extends Fake implements Line {}
+
+class _FallbackSourceProperties extends Fake implements SourceProperties {}
+
+class _FallbackCircleLayerProperties extends Fake implements CircleLayerProperties {}
 
 /// Call once in setUpAll before stubbing methods that take these types.
 void registerGoodFallbacks() {
@@ -43,4 +55,6 @@ void registerGoodFallbacks() {
   registerFallbackValue(Uint8List(0)); // for addImage(bytes) stubs
   registerFallbackValue(const LineOptions()); // for addLine(options) stubs
   registerFallbackValue(_FallbackLine()); // for removeLine(line) stubs
+  registerFallbackValue(_FallbackSourceProperties());
+  registerFallbackValue(_FallbackCircleLayerProperties());
 }

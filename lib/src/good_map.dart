@@ -11,13 +11,14 @@ import 'theme/good_map_theme.dart';
 export 'controls/controls.dart' show GoodControls;
 
 /// Test seam: builds the native map view. Production uses [_defaultMapBuilder].
-typedef GoodMapBuilder = Widget Function({
-  required String styleString,
-  required CameraPosition initialCameraPosition,
-  required void Function(MapLibreMapController) onMapCreated,
-  required void Function() onStyleLoaded,
-  required void Function(CameraPosition) onCameraMove,
-});
+typedef GoodMapBuilder =
+    Widget Function({
+      required String styleString,
+      required CameraPosition initialCameraPosition,
+      required void Function(MapLibreMapController) onMapCreated,
+      required void Function() onStyleLoaded,
+      required void Function(CameraPosition) onCameraMove,
+    });
 
 /// A theme-aware map with overlay markers/popups and zoom/compass controls.
 class GoodMap extends StatefulWidget {
@@ -80,7 +81,11 @@ class _GoodMapState extends State<GoodMap> {
     }
     _declarativePopupIds.clear();
     for (final popup in widget.popups) {
-      final id = c.showPopup(popup.position, popup.child, alignment: popup.alignment);
+      final id = c.showPopup(
+        popup.position,
+        popup.child,
+        alignment: popup.alignment,
+      );
       _declarativePopupIds.add(id);
     }
   }

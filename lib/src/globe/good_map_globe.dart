@@ -119,48 +119,46 @@ class _GoodMapGlobeState extends State<GoodMapGlobe> {
 
   @override
   Widget build(BuildContext context) {
-    final Widget child = _flat
-        ? GoodMap(
-            key: const ValueKey('flat'),
-            initialCenter: _center,
-            initialZoom: widget.flatEntryZoom,
-            controls: widget.controls,
-            markers: widget.markers,
-            popups: widget.popups,
-            onCameraChanged: (pos) {
-              _center = pos.target;
-              if (pos.zoom < widget.flatZoomToGlobe) {
-                _globeStartZoom = widget.globeEntryZoom;
-                _setFlat(false);
-              }
-            },
-          )
-        : GoodGlobe(
-            key: const ValueKey('globe'),
-            initialCenter: _center,
-            initialZoom: _globeStartZoom,
-            markers: widget.markers,
-            points: widget.points,
-            popups: widget.popups,
-            arcs: widget.arcs,
-            heatmaps: widget.heatmaps,
-            atmosphere: widget.atmosphere,
-            onTap: widget.onTap,
-            showDottedGrid: widget.showDottedGrid,
-            dottedGridColor: widget.dottedGridColor,
-            dottedGridRadius: widget.dottedGridRadius,
-            dateTime: widget.dateTime,
-            sunPosition: widget.sunPosition,
-            timeRange: widget.timeRange,
-            onCameraChanged: (center, zoom) {
-              _center = center;
-              if (zoom >= widget.globeZoomToFlat) _setFlat(true);
-            },
-          );
+    final Widget child =
+        _flat
+            ? GoodMap(
+              key: const ValueKey('flat'),
+              initialCenter: _center,
+              initialZoom: widget.flatEntryZoom,
+              controls: widget.controls,
+              markers: widget.markers,
+              popups: widget.popups,
+              onCameraChanged: (pos) {
+                _center = pos.target;
+                if (pos.zoom < widget.flatZoomToGlobe) {
+                  _globeStartZoom = widget.globeEntryZoom;
+                  _setFlat(false);
+                }
+              },
+            )
+            : GoodGlobe(
+              key: const ValueKey('globe'),
+              initialCenter: _center,
+              initialZoom: _globeStartZoom,
+              markers: widget.markers,
+              points: widget.points,
+              popups: widget.popups,
+              arcs: widget.arcs,
+              heatmaps: widget.heatmaps,
+              atmosphere: widget.atmosphere,
+              onTap: widget.onTap,
+              showDottedGrid: widget.showDottedGrid,
+              dottedGridColor: widget.dottedGridColor,
+              dottedGridRadius: widget.dottedGridRadius,
+              dateTime: widget.dateTime,
+              sunPosition: widget.sunPosition,
+              timeRange: widget.timeRange,
+              onCameraChanged: (center, zoom) {
+                _center = center;
+                if (zoom >= widget.globeZoomToFlat) _setFlat(true);
+              },
+            );
 
-    return AnimatedSwitcher(
-      duration: widget.transition,
-      child: child,
-    );
+    return AnimatedSwitcher(duration: widget.transition, child: child);
   }
 }

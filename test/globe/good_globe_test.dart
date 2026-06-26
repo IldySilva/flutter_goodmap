@@ -80,7 +80,7 @@ void main() {
     expect(find.byKey(const Key('hidden_marker')), findsNothing);
 
     // Tap visible marker
-    await tester.tap(find.byKey(const Key('globe_marker')));
+    await tester.tap(find.byKey(const Key('globe_marker')), warnIfMissed: false);
     await tester.pump();
     expect(tapped, isTrue);
   });

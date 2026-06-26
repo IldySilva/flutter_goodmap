@@ -317,8 +317,16 @@ class _DemoHomeState extends State<DemoHome> {
         title: SegmentedButton<bool>(
           showSelectedIcon: false,
           segments: const [
-            ButtonSegment(value: false, label: Text('Flat'), icon: Icon(Icons.map_outlined)),
-            ButtonSegment(value: true, label: Text('Globe'), icon: Icon(Icons.public)),
+            ButtonSegment(
+              value: false,
+              label: Text('Flat'),
+              icon: Icon(Icons.map_outlined),
+            ),
+            ButtonSegment(
+              value: true,
+              label: Text('Globe'),
+              icon: Icon(Icons.public),
+            ),
           ],
           selected: {_showGlobe},
           onSelectionChanged: (s) => setState(() => _showGlobe = s.first),

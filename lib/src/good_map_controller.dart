@@ -5,7 +5,6 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/widgets.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
-import 'globe/world_land_dots.dart';
 import 'heatmap/heatmap.dart';
 import 'internal/registry.dart';
 import 'lines/polyline.dart';
@@ -13,7 +12,8 @@ import 'markers/marker.dart';
 import 'popups/popup.dart';
 
 export 'popups/popup.dart' show PopupId, PopupOptions;
-export 'markers/marker.dart' show MarkerId, MarkerImage, MarkerOptions, GlobePoint;
+export 'markers/marker.dart'
+    show MarkerId, MarkerImage, MarkerOptions, GlobePoint;
 export 'lines/polyline.dart' show PolylineId, PolylineOptions;
 export 'heatmap/heatmap.dart' show HeatmapId, HeatmapOptions;
 
@@ -37,9 +37,6 @@ class GoodMapController extends ChangeNotifier {
   // --- Heatmaps -----------------------------------------------------------
   final Registry<HeatmapOptions> _heatmaps = Registry<HeatmapOptions>();
 
-  // --- Dotted grid state --------------------------------------------------
-  bool _dottedGridEnabled = false;
-
   // --- 3D buildings state -------------------------------------------------
   bool _buildings3DEnabled = false;
 
@@ -47,9 +44,10 @@ class GoodMapController extends ChangeNotifier {
 
   /// Animates the camera to [target], optionally setting [zoom].
   Future<void> flyTo(LatLng target, {double? zoom}) async {
-    final update = zoom == null
-        ? CameraUpdate.newLatLng(target)
-        : CameraUpdate.newLatLngZoom(target, zoom);
+    final update =
+        zoom == null
+            ? CameraUpdate.newLatLng(target)
+            : CameraUpdate.newLatLngZoom(target, zoom);
     await _native.animateCamera(update);
   }
 
@@ -76,9 +74,10 @@ class GoodMapController extends ChangeNotifier {
 
   /// Moves the camera to [target] instantly (no animation), optionally [zoom].
   Future<void> moveTo(LatLng target, {double? zoom}) async {
-    final update = zoom == null
-        ? CameraUpdate.newLatLng(target)
-        : CameraUpdate.newLatLngZoom(target, zoom);
+    final update =
+        zoom == null
+            ? CameraUpdate.newLatLng(target)
+            : CameraUpdate.newLatLngZoom(target, zoom);
     await _native.moveCamera(update);
   }
 
@@ -102,7 +101,10 @@ class GoodMapController extends ChangeNotifier {
     if (!_markers.items.containsKey(id.value)) return;
     _markers.update(id.value, options);
     if (options.image != null) {
-      _createSymbol(id.value, options); // re-create to reflect new position/icon
+      _createSymbol(
+        id.value,
+        options,
+      ); // re-create to reflect new position/icon
     }
   }
 
@@ -137,7 +139,6 @@ class GoodMapController extends ChangeNotifier {
     for (final entry in _polylines.items.entries) {
       _createLine(entry.key, entry.value);
     }
-    if (_dottedGridEnabled) _applyDottedGrid();
     if (_buildings3DEnabled) _applyBuildings3D();
     for (final entry in _heatmaps.items.entries) {
       _createHeatmapLayer(entry.key, entry.value);
@@ -175,8 +176,7 @@ class GoodMapController extends ChangeNotifier {
     Color color = const Color(0xFF3F51B5),
     double width = 4,
   }) {
-    final options =
-        PolylineOptions(points: points, color: color, width: width);
+    final options = PolylineOptions(points: points, color: color, width: width);
     final int id = _polylines.add(options);
     _createLine(id, options);
     return PolylineId(id);
@@ -210,62 +210,7 @@ class GoodMapController extends ChangeNotifier {
     _lines[id] = line;
   }
 
-  // --- Dotted world grid -------------------------------------------------
 
-  static const String _kDottedGridSource = '_goodmap_land_dots';
-  static const String _kDottedGridLayer = '_goodmap_land_dots_layer';
-
-  /// Shows the dotted world landmass grid on the flat map. The grid is drawn
-  /// as small theme-aware circles using [kWorldLandDots] coordinates.
-  Future<void> enableDottedGrid({Color? color}) async {
-    _dottedGridEnabled = true;
-    await _applyDottedGrid(color: color);
-  }
-
-  /// Removes the dotted world landmass grid from the flat map.
-  Future<void> disableDottedGrid() async {
-    _dottedGridEnabled = false;
-    try {
-      await _native.removeLayer(_kDottedGridLayer);
-      await _native.removeSource(_kDottedGridSource);
-    } catch (_) {}
-  }
-
-  Future<void> _applyDottedGrid({Color? color}) async {
-    final dotColor = color ?? const Color(0xFF555555);
-    final features = kWorldLandDots.map((pt) => {
-      'type': 'Feature',
-      'geometry': {
-        'type': 'Point',
-        'coordinates': [pt.longitude, pt.latitude],
-      },
-      'properties': <String, dynamic>{},
-    }).toList();
-    final geojson = {
-      'type': 'FeatureCollection',
-      'features': features,
-    };
-    // Remove any existing layer/source first (after a style reload).
-    try {
-      await _native.removeLayer(_kDottedGridLayer);
-      await _native.removeSource(_kDottedGridSource);
-    } catch (_) {}
-    await _native.addSource(
-      _kDottedGridSource,
-      GeojsonSourceProperties(data: geojson),
-    );
-    await _native.addCircleLayer(
-      _kDottedGridSource,
-      _kDottedGridLayer,
-      CircleLayerProperties(
-        circleRadius: 1.8,
-        circleColor: dotColor.toHexStringRGB(),
-        circleOpacity: dotColor.a,
-      ),
-    );
-  }
-
-  // --- Heatmaps ----------------------------------------------------------
 
   /// Adds a heatmap layer and returns its [HeatmapId]. The heatmap is rendered
   /// natively by MapLibre using a GeoJSON source built from [options.points].
@@ -301,19 +246,21 @@ class GoodMapController extends ChangeNotifier {
   Future<void> _createHeatmapLayer(int id, HeatmapOptions options) async {
     final sourceId = '_goodmap_heatmap_src_$id';
     final layerId = '_goodmap_heatmap_lyr_$id';
-    final features = options.points.map((pt) {
-      final w = options.weights?.isEmpty == true
-          ? 1.0
-          : (options.weights![options.points.indexOf(pt)]);
-      return {
-        'type': 'Feature',
-        'geometry': {
-          'type': 'Point',
-          'coordinates': [pt.longitude, pt.latitude],
-        },
-        'properties': {'weight': w},
-      };
-    }).toList();
+    final features =
+        options.points.map((pt) {
+          final w =
+              options.weights?.isEmpty == true
+                  ? 1.0
+                  : (options.weights![options.points.indexOf(pt)]);
+          return {
+            'type': 'Feature',
+            'geometry': {
+              'type': 'Point',
+              'coordinates': [pt.longitude, pt.latitude],
+            },
+            'properties': {'weight': w},
+          };
+        }).toList();
     final geojson = {'type': 'FeatureCollection', 'features': features};
     try {
       await _native.removeLayer(layerId);
@@ -331,19 +278,27 @@ class GoodMapController extends ChangeNotifier {
           'interpolate',
           ['linear'],
           ['get', 'weight'],
-          0, 0,
-          1, 1,
+          0,
+          0,
+          1,
+          1,
         ],
         heatmapColor: [
           'interpolate',
           ['linear'],
           ['heatmap-density'],
-          0, 'rgba(0,0,255,0)',
-          0.2, 'royalblue',
-          0.4, 'cyan',
-          0.6, 'lime',
-          0.8, 'yellow',
-          1, 'red',
+          0,
+          'rgba(0,0,255,0)',
+          0.2,
+          'royalblue',
+          0.4,
+          'cyan',
+          0.6,
+          'lime',
+          0.8,
+          'yellow',
+          1,
+          'red',
         ],
       ),
     );
@@ -422,28 +377,32 @@ class GoodMapController extends ChangeNotifier {
 
   /// All overlay-widget entries (child-markers + popups) to be projected.
   List<OverlayEntryData> get overlayEntries => <OverlayEntryData>[
-        for (final entry in _markers.items.entries)
-          if (entry.value.child != null || entry.value.image == null)
-            OverlayEntryData(
-              key: MarkerId(entry.key),
-              position: entry.value.position,
-              alignment: entry.value.child != null ? entry.value.alignment : Alignment.center,
-              onTap: entry.value.onTap,
-              child: entry.value.child ??
-                  DefaultDotMarker(
-                    color: entry.value.color ?? const Color(0xFF4F86F7),
-                    radius: entry.value.radius ?? 4,
-                    label: entry.value.label,
-                  ),
-            ),
-        for (final entry in _popups.items.entries)
-          OverlayEntryData(
-            key: PopupId(entry.key),
-            position: entry.value.position,
-            alignment: entry.value.alignment,
-            child: entry.value.child,
-          ),
-      ];
+    for (final entry in _markers.items.entries)
+      if (entry.value.child != null || entry.value.image == null)
+        OverlayEntryData(
+          key: MarkerId(entry.key),
+          position: entry.value.position,
+          alignment:
+              entry.value.child != null
+                  ? entry.value.alignment
+                  : Alignment.center,
+          onTap: entry.value.onTap,
+          child:
+              entry.value.child ??
+              DefaultDotMarker(
+                color: entry.value.color ?? const Color(0xFF4F86F7),
+                radius: entry.value.radius ?? 4,
+                label: entry.value.label,
+              ),
+        ),
+    for (final entry in _popups.items.entries)
+      OverlayEntryData(
+        key: PopupId(entry.key),
+        position: entry.value.position,
+        alignment: entry.value.alignment,
+        child: entry.value.child,
+      ),
+  ];
 
   @override
   void dispose() {
@@ -498,10 +457,7 @@ class DefaultDotMarker extends StatelessWidget {
       child: Container(
         width: radius * 2,
         height: radius * 2,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
     );
 
@@ -532,4 +488,3 @@ class DefaultDotMarker extends StatelessWidget {
     );
   }
 }
-

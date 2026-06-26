@@ -53,8 +53,12 @@ void main() {
         key: const ValueKey('m'),
         position: const LatLng(0, 0),
         alignment: Alignment.topLeft,
-        onTap: () => tapped = true,
-        child: const SizedBox(key: ValueKey('hit'), width: 40, height: 40),
+        child: GestureDetector(
+          key: const ValueKey('hit'),
+          behavior: HitTestBehavior.opaque,
+          onTap: () => tapped = true,
+          child: const SizedBox(width: 40, height: 40),
+        ),
       ),
     ];
 
