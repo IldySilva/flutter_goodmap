@@ -38,9 +38,9 @@ GoodGlobe(
   initialCenter: const LatLng(-8.84, 13.23), // Luanda
   initialZoom: 1.0,
   atmosphere: false,
-  points: const [
-    GlobePoint(coordinate: LatLng(-8.84, 13.23), label: 'Luanda', color: Colors.white, radius: 6),
-    GlobePoint(coordinate: LatLng(51.50, -0.13), label: 'London'),
+  markers: const [
+    MarkerOptions(position: LatLng(-8.84, 13.23), label: 'Luanda', color: Colors.white, radius: 6),
+    MarkerOptions(position: LatLng(51.50, -0.13), label: 'London'),
   ],
   arcs: const [
     GlobeArc(from: LatLng(-8.84, 13.23), to: LatLng(51.50, -0.13)),
@@ -49,20 +49,20 @@ GoodGlobe(
 )
 ```
 
-- **`GoodGlobe`** — `points`, `arcs`, `atmosphere`, `onTap`, `onPointTap`.
-- **`GlobePoint`** — `coordinate`, `label`, `color`, `radius`.
+- **`GoodGlobe`** — `markers`, `arcs`, `atmosphere`, `onTap`, `onPointTap`.
+- **`MarkerOptions`** — `position`, `label`, `color`, `radius`.
 - **`GlobeArc`** — `from`, `to`, `color`, `width`, `dashed`, `bend`, `segments`.
 
 ### Globe that zooms into streets (`GoodMapGlobe`)
 
 Use `GoodMapGlobe` instead of `GoodGlobe` for a globe that **cross-fades to the
 native flat map** (full vector streets/cities) once you pinch past a zoom
-threshold, and back out to the globe — same API plus `points`/`arcs`/`atmosphere`.
+threshold, and back out to the globe — same API plus `markers`/`arcs`/`atmosphere`.
 
 ```dart
 GoodMapGlobe(
   initialCenter: const LatLng(-8.84, 13.23),
-  points: [...],
+  markers: [...],
   arcs: [...],
 )
 ```
