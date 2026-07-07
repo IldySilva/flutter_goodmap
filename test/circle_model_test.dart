@@ -12,10 +12,7 @@ void main() {
   });
 
   test('CircleOptions defaults to blue at 30% opacity, 64 segments', () {
-    const o = CircleOptions(
-      center: LatLng(0, 0),
-      radiusMeters: 1000,
-    );
+    const o = CircleOptions(center: LatLng(0, 0), radiusMeters: 1000);
     expect(o.color, const Color(0xFF4F86F7));
     expect(o.opacity, 0.3);
     expect(o.segments, 64);
@@ -24,11 +21,7 @@ void main() {
 
   test('buildCirclePoints returns closed ring with expected length', () {
     const center = LatLng(0, 0);
-    final points = CircleOptions.buildCirclePoints(
-      center,
-      1000,
-      segments: 4,
-    );
+    final points = CircleOptions.buildCirclePoints(center, 1000, segments: 4);
     // 4 segments → 5 points (closed: first = last)
     expect(points.length, 5);
     expect(points.first.latitude, closeTo(points.last.latitude, 1e-10));
@@ -49,7 +42,8 @@ void main() {
       // Approximate great-circle distance.
       final dlat = (p.latitude - center.latitude) * math.pi / 180;
       final dlon = (p.longitude - center.longitude) * math.pi / 180;
-      final a = math.sin(dlat / 2) * math.sin(dlat / 2) +
+      final a =
+          math.sin(dlat / 2) * math.sin(dlat / 2) +
           math.cos(center.latitude * math.pi / 180) *
               math.cos(p.latitude * math.pi / 180) *
               math.sin(dlon / 2) *

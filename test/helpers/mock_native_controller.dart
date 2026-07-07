@@ -44,7 +44,8 @@ class _FallbackLine extends Fake implements Line {}
 
 class _FallbackSourceProperties extends Fake implements SourceProperties {}
 
-class _FallbackCircleLayerProperties extends Fake implements CircleLayerProperties {}
+class _FallbackCircleLayerProperties extends Fake
+    implements CircleLayerProperties {}
 
 class _FallbackFill extends Fake implements Fill {}
 

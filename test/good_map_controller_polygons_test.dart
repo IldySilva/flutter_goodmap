@@ -31,7 +31,8 @@ void main() {
     expect(id, const PolygonId(0));
     await Future<void>.delayed(Duration.zero);
     final captured =
-        verify(() => native.addFill(captureAny())).captured.single as FillOptions;
+        verify(() => native.addFill(captureAny())).captured.single
+            as FillOptions;
     expect(captured.fillColor, '#ff0000');
     expect(captured.fillOpacity, 0.7);
     // Ring is auto-closed (first point appended).
@@ -51,7 +52,8 @@ void main() {
     );
     await Future<void>.delayed(Duration.zero);
     final captured =
-        verify(() => native.addFill(captureAny())).captured.single as FillOptions;
+        verify(() => native.addFill(captureAny())).captured.single
+            as FillOptions;
     expect(captured.geometry!.length, 2);
   });
 
@@ -64,7 +66,8 @@ void main() {
     );
     await Future<void>.delayed(Duration.zero);
     final captured =
-        verify(() => native.addFill(captureAny())).captured.single as FillOptions;
+        verify(() => native.addFill(captureAny())).captured.single
+            as FillOptions;
     expect(captured.fillOutlineColor, '#000000');
   });
 

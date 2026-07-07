@@ -32,7 +32,8 @@ void main() {
     expect(id, const CircleId(0));
     await Future<void>.delayed(Duration.zero);
     final captured =
-        verify(() => native.addFill(captureAny())).captured.single as FillOptions;
+        verify(() => native.addFill(captureAny())).captured.single
+            as FillOptions;
     expect(captured.fillColor, '#00ff00');
     expect(captured.fillOpacity, 0.5);
     // Geometry should be a closed ring (first == last).
@@ -51,7 +52,8 @@ void main() {
     );
     await Future<void>.delayed(Duration.zero);
     final captured =
-        verify(() => native.addFill(captureAny())).captured.single as FillOptions;
+        verify(() => native.addFill(captureAny())).captured.single
+            as FillOptions;
     expect(captured.fillOutlineColor, '#ff0000');
   });
 

@@ -16,7 +16,12 @@ Data visualization & richness.
 - **`HeatmapId`** — opaque typed handle.
 
 ### 3D Building Extrusions (flat map)
-- **`GoodMapController.enableBuildings3D()`** / **`disableBuildings3D()`** — inserts a native `fill-extrusion` layer on the `building` source layer using height/min\_height fields from the active basemap, re-applied automatically after theme changes.
+- **`GoodMapController.enableBuildings3D()`** / **`disableBuildings3D()`** — inserts a native `fill-extrusion` layer on the `building` source layer using height/min_height fields from the active basemap, re-applied automatically after theme changes.
+
+### Polygons & Circles (flat map)
+- **`GoodMapController.addPolygon(PolygonOptions)`** — draws a filled polygon on the map with outer rings and optional inner rings (holes) using native fills. Returns a `PolygonId`.
+- **`GoodMapController.addCircle(CircleOptions)`** — draws a circular area scaling with zoom (approximated as a regular polygon with geodesic calculations). Returns a `CircleId`.
+- **`removePolygon`**, **`clearPolygons`**, **`removeCircle`**, **`clearCircles`** — full lifecycle management for polygon and circle layers.
 
 ## 0.3.0
 

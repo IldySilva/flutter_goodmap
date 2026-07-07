@@ -225,8 +225,6 @@ class GoodMapController extends ChangeNotifier {
     _lines[id] = line;
   }
 
-
-
   /// Adds a heatmap layer and returns its [HeatmapId]. The heatmap is rendered
   /// natively by MapLibre using a GeoJSON source built from [options.points].
   Future<HeatmapId> addHeatmap(HeatmapOptions options) async {

@@ -8,8 +8,7 @@ class PolygonId {
   final int value;
 
   @override
-  bool operator ==(Object other) =>
-      other is PolygonId && other.value == value;
+  bool operator ==(Object other) => other is PolygonId && other.value == value;
 
   @override
   int get hashCode => value.hashCode;
@@ -50,8 +49,5 @@ class PolygonOptions {
 
   /// All rings combined: first the outer ring, then any holes.
   /// Used internally to build the native [FillOptions.geometry].
-  List<List<LatLng>> get rings => [
-        points,
-        if (holes != null) ...holes!,
-      ];
+  List<List<LatLng>> get rings => [points, if (holes != null) ...holes!];
 }

@@ -10,8 +10,7 @@ class CircleId {
   final int value;
 
   @override
-  bool operator ==(Object other) =>
-      other is CircleId && other.value == value;
+  bool operator ==(Object other) => other is CircleId && other.value == value;
 
   @override
   int get hashCode => value.hashCode;
@@ -76,10 +75,12 @@ class CircleOptions {
     final points = <LatLng>[];
     for (var i = 0; i <= segments; i++) {
       final bearing = 2 * math.pi * i / segments;
-      final lat =
-          math.asin(math.sin(latRad) * math.cos(d) +
-              math.cos(latRad) * math.sin(d) * math.cos(bearing));
-      final lon = lonRad +
+      final lat = math.asin(
+        math.sin(latRad) * math.cos(d) +
+            math.cos(latRad) * math.sin(d) * math.cos(bearing),
+      );
+      final lon =
+          lonRad +
           math.atan2(
             math.sin(bearing) * math.sin(d) * math.cos(latRad),
             math.cos(d) - math.sin(latRad) * math.sin(lat),
