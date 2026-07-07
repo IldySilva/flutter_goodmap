@@ -99,6 +99,8 @@ GoodMap(
 - **Polylines:** `addPolyline`, `removePolyline`, `clearPolylines`
 - **Dotted Grid:** `enableDottedGrid`, `disableDottedGrid`
 - **Heatmaps:** `addHeatmap`, `updateHeatmap`, `removeHeatmap`, `clearHeatmaps`
+- **Polygons:** `addPolygon`, `removePolygon`, `clearPolygons`
+- **Circles:** `addCircle`, `removeCircle`, `clearCircles`
 
 Both surfaces follow `Theme.of(context).brightness` (CARTO positron / dark-matter).
 
@@ -142,6 +144,41 @@ final heatmapId = await controller.addHeatmap(
   ),
 );
 await controller.removeHeatmap(heatmapId);
+```
+
+## Polygons & Circles
+
+Draw filled shapes and circular areas on the flat map:
+
+```dart
+// Add a filled polygon (outer ring + optional holes)
+final polygonId = controller.addPolygon(
+  const PolygonOptions(
+    points: [
+      LatLng(37.784, -122.411),
+      LatLng(37.770, -122.404),
+      LatLng(37.775, -122.428),
+    ],
+    color: Color(0xFF4CAF50),
+    opacity: 0.35,
+    outlineColor: Color(0xFF2E7D32),
+  ),
+);
+
+// Add a circular area (geographic radius in meters, scales with zoom)
+final circleId = controller.addCircle(
+  const CircleOptions(
+    center: LatLng(37.7955, -122.3937),
+    radiusMeters: 800,
+    color: Color(0xFF4F86F7),
+    opacity: 0.25,
+    outlineColor: Color(0xFF1A237E),
+  ),
+);
+
+// Remove individual shapes
+controller.removePolygon(polygonId);
+controller.removeCircle(circleId);
 ```
 
 ## Basemap terms

@@ -46,6 +46,8 @@ class _FallbackSourceProperties extends Fake implements SourceProperties {}
 
 class _FallbackCircleLayerProperties extends Fake implements CircleLayerProperties {}
 
+class _FallbackFill extends Fake implements Fill {}
+
 /// Call once in setUpAll before stubbing methods that take these types.
 void registerGoodFallbacks() {
   registerFallbackValue(CameraUpdate.zoomIn());
@@ -57,4 +59,6 @@ void registerGoodFallbacks() {
   registerFallbackValue(_FallbackLine()); // for removeLine(line) stubs
   registerFallbackValue(_FallbackSourceProperties());
   registerFallbackValue(_FallbackCircleLayerProperties());
+  registerFallbackValue(const FillOptions()); // for addFill(options) stubs
+  registerFallbackValue(_FallbackFill()); // for removeFill(fill) stubs
 }
