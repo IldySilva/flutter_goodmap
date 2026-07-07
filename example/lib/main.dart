@@ -92,6 +92,10 @@ class _DemoHomeState extends State<DemoHome> {
   PolylineId? _poiRoute;
   PolylineId? _ferryLine;
 
+  // Polygon + circle demo.
+  PolygonId? _demoPolygon;
+  CircleId? _demoCircle;
+
   @override
   void dispose() {
     _liveTimer?.cancel();
@@ -216,6 +220,53 @@ class _DemoHomeState extends State<DemoHome> {
     setState(() => _liveMarker = id);
   }
 
+  // --- Polygon / circle demo ----------------------------------------------
+
+  void _toggleDemoPolygon() {
+    final c = _controller;
+    if (c == null) return;
+    if (_demoPolygon != null) {
+      c.removePolygon(_demoPolygon!);
+      setState(() => _demoPolygon = null);
+      return;
+    }
+    // A triangle covering downtown SF.
+    final id = c.addPolygon(
+      const PolygonOptions(
+        points: [
+          LatLng(37.784, -122.411),
+          LatLng(37.770, -122.404),
+          LatLng(37.775, -122.428),
+        ],
+        color: Color(0xFF4CAF50),
+        opacity: 0.35,
+        outlineColor: Color(0xFF2E7D32),
+      ),
+    );
+    setState(() => _demoPolygon = id);
+  }
+
+  void _toggleDemoCircle() {
+    final c = _controller;
+    if (c == null) return;
+    if (_demoCircle != null) {
+      c.removeCircle(_demoCircle!);
+      setState(() => _demoCircle = null);
+      return;
+    }
+    // 800 m circle around the Ferry Building.
+    final id = c.addCircle(
+      const CircleOptions(
+        center: LatLng(37.7955, -122.3937),
+        radiusMeters: 800,
+        color: Color(0xFF4F86F7),
+        opacity: 0.25,
+        outlineColor: Color(0xFF1A237E),
+      ),
+    );
+    setState(() => _demoCircle = id);
+  }
+
   // --- Native GL-symbol markers -------------------------------------------
 
   void _toggleGlPins() {
@@ -304,6 +355,8 @@ class _DemoHomeState extends State<DemoHome> {
                   liveOn: _liveMarker != null,
                   glOn: _glPins.isNotEmpty,
                   routeOn: _poiRoute != null,
+                  polygonOn: _demoPolygon != null,
+                  circleOn: _demoCircle != null,
                   onFitAll: _fitAll,
                   onFlyToBridge: _flyToBridge,
                   onTilt: _tiltAndRotate,
@@ -311,6 +364,8 @@ class _DemoHomeState extends State<DemoHome> {
                   onToggleRoute: _togglePoiRoute,
                   onToggleLive: _toggleLiveMarker,
                   onToggleGl: _toggleGlPins,
+                  onTogglePolygon: _toggleDemoPolygon,
+                  onToggleCircle: _toggleDemoCircle,
                   onClearPopups: () {
                     _controller?.clearPopups();
                     _activePopup = null;
@@ -328,6 +383,8 @@ class _ControlPanel extends StatelessWidget {
     required this.liveOn,
     required this.glOn,
     required this.routeOn,
+    required this.polygonOn,
+    required this.circleOn,
     required this.onFitAll,
     required this.onFlyToBridge,
     required this.onTilt,
@@ -335,6 +392,8 @@ class _ControlPanel extends StatelessWidget {
     required this.onToggleRoute,
     required this.onToggleLive,
     required this.onToggleGl,
+    required this.onTogglePolygon,
+    required this.onToggleCircle,
     required this.onClearPopups,
   });
 
@@ -342,6 +401,8 @@ class _ControlPanel extends StatelessWidget {
   final bool liveOn;
   final bool glOn;
   final bool routeOn;
+  final bool polygonOn;
+  final bool circleOn;
   final VoidCallback onFitAll;
   final VoidCallback onFlyToBridge;
   final VoidCallback onTilt;
@@ -349,6 +410,8 @@ class _ControlPanel extends StatelessWidget {
   final VoidCallback onToggleRoute;
   final VoidCallback onToggleLive;
   final VoidCallback onToggleGl;
+  final VoidCallback onTogglePolygon;
+  final VoidCallback onToggleCircle;
   final VoidCallback onClearPopups;
 
   @override
@@ -411,6 +474,18 @@ class _ControlPanel extends StatelessWidget {
                       label: glOn ? 'Clear GL pins' : 'Drop GL pins',
                       selected: glOn,
                       onTap: enabled ? onToggleGl : null,
+                    ),
+                    _DemoButton(
+                      icon: polygonOn ? Icons.auto_fix_high : Icons.category,
+                      label: polygonOn ? 'Hide polygon' : 'Polygon',
+                      selected: polygonOn,
+                      onTap: enabled ? onTogglePolygon : null,
+                    ),
+                    _DemoButton(
+                      icon: circleOn ? Icons.auto_fix_high : Icons.circle,
+                      label: circleOn ? 'Hide circle' : 'Circle',
+                      selected: circleOn,
+                      onTap: enabled ? onToggleCircle : null,
                     ),
                     _DemoButton(
                       icon: Icons.close_fullscreen,

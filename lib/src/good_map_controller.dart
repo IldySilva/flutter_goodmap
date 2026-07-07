@@ -3,13 +3,17 @@ import 'dart:typed_data';
 
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/widgets.dart';
-import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:maplibre_gl/maplibre_gl.dart' hide CircleOptions;
 
 import 'internal/registry.dart';
+import 'lines/circle.dart';
+import 'lines/polygon.dart';
 import 'lines/polyline.dart';
 import 'markers/marker.dart';
 import 'popups/popup.dart';
 
+export 'lines/circle.dart' show CircleId, CircleOptions;
+export 'lines/polygon.dart' show PolygonId, PolygonOptions;
 export 'popups/popup.dart' show PopupId, PopupOptions;
 export 'markers/marker.dart' show MarkerId, MarkerImage, MarkerOptions, GlobePoint;
 export 'lines/polyline.dart' show PolylineId, PolylineOptions;
@@ -30,6 +34,9 @@ class GoodMapController extends ChangeNotifier {
   // is not wired to notifyListeners — it just allocates ids and stores options
   // for re-application after a style reload.
   final Registry<PolylineOptions> _polylines = Registry<PolylineOptions>();
+
+  final Registry<PolygonOptions> _polygons = Registry<PolygonOptions>();
+  final Registry<CircleOptions> _circles = Registry<CircleOptions>();
 
   // --- Camera -------------------------------------------------------------
 
@@ -110,10 +117,10 @@ class GoodMapController extends ChangeNotifier {
     _markers.clear();
   }
 
-  /// Re-creates GL-scene objects (image-marker symbols and polylines) on a
-  /// freshly loaded style (e.g. after a theme change). Overlay-widget markers
-  /// and popups need no re-application — they are Flutter widgets, not part of
-  /// the GL scene.
+  /// Re-creates GL-scene objects (image-marker symbols, polylines, polygons
+  /// and circles) on a freshly loaded style (e.g. after a theme change).
+  /// Overlay-widget markers and popups need no re-application — they are
+  /// Flutter widgets, not part of the GL scene.
   void reapplyGlObjects() {
     _symbols.clear();
     for (final entry in _markers.items.entries) {
@@ -124,6 +131,14 @@ class GoodMapController extends ChangeNotifier {
     _lines.clear();
     for (final entry in _polylines.items.entries) {
       _createLine(entry.key, entry.value);
+    }
+    _fills.clear();
+    for (final entry in _polygons.items.entries) {
+      _createFill(entry.key, entry.value);
+    }
+    _circleFills.clear();
+    for (final entry in _circles.items.entries) {
+      _createCircleFill(entry.key, entry.value);
     }
   }
 
@@ -198,6 +213,114 @@ class GoodMapController extends ChangeNotifier {
     if (line != null) _native.removeLine(line);
   }
 
+  /// Ensures a polygon ring is closed (first point == last point) as required
+  /// by the GeoJSON spec. Returns the same list unchanged if already closed.
+  List<LatLng> _closeRing(List<LatLng> ring) {
+    if (ring.isEmpty) return ring;
+    final first = ring.first;
+    final last = ring.last;
+    if (first.latitude == last.latitude && first.longitude == last.longitude) {
+      return ring;
+    }
+    return [...ring, first];
+  }
+
+  // --- Polygons / fills ---------------------------------------------------
+
+  // Maps polygon id -> native Fill.
+  final Map<int, Fill> _fills = <int, Fill>{};
+
+  /// Draws a filled polygon on the map. The polygon's [points] form the outer
+  /// ring; optional [holes] define cut-out inner rings.
+  PolygonId addPolygon(PolygonOptions options) {
+    final int id = _polygons.add(options);
+    _createFill(id, options);
+    return PolygonId(id);
+  }
+
+  /// Removes a polygon. Unknown [id] is a no-op.
+  void removePolygon(PolygonId id) {
+    if (!_polygons.items.containsKey(id.value)) return;
+    _polygons.remove(id.value);
+    _disposeFill(id.value);
+  }
+
+  /// Removes all polygons.
+  void clearPolygons() {
+    for (final fill in _fills.values) {
+      _native.removeFill(fill);
+    }
+    _fills.clear();
+    _polygons.clear();
+  }
+
+  Future<void> _createFill(int id, PolygonOptions options) async {
+    final geometry = <List<LatLng>>[
+      for (final ring in options.rings) _closeRing(ring),
+    ];
+    final Fill fill = await _native.addFill(
+      FillOptions(
+        geometry: geometry,
+        fillColor: options.color.toHexStringRGB(),
+        fillOpacity: options.opacity,
+        fillOutlineColor: options.outlineColor?.toHexStringRGB(),
+      ),
+    );
+    _fills[id] = fill;
+  }
+
+  void _disposeFill(int id) {
+    final fill = _fills.remove(id);
+    if (fill != null) _native.removeFill(fill);
+  }
+
+  // --- Circles (area) -----------------------------------------------------
+
+  // Maps circle id -> native Fill (circles are approximated as polygons).
+  final Map<int, Fill> _circleFills = <int, Fill>{};
+
+  /// Draws a circular area on the map that scales with zoom. The circle is
+  /// approximated as a regular polygon of [CircleOptions.segments] vertices
+  /// and rendered via the native fill engine.
+  CircleId addCircle(CircleOptions options) {
+    final int id = _circles.add(options);
+    _createCircleFill(id, options);
+    return CircleId(id);
+  }
+
+  /// Removes a circle. Unknown [id] is a no-op.
+  void removeCircle(CircleId id) {
+    if (!_circles.items.containsKey(id.value)) return;
+    _circles.remove(id.value);
+    _disposeCircleFill(id.value);
+  }
+
+  /// Removes all circles.
+  void clearCircles() {
+    for (final fill in _circleFills.values) {
+      _native.removeFill(fill);
+    }
+    _circleFills.clear();
+    _circles.clear();
+  }
+
+  Future<void> _createCircleFill(int id, CircleOptions options) async {
+    final Fill fill = await _native.addFill(
+      FillOptions(
+        geometry: [_closeRing(options.polygonPoints)],
+        fillColor: options.color.toHexStringRGB(),
+        fillOpacity: options.opacity,
+        fillOutlineColor: options.outlineColor?.toHexStringRGB(),
+      ),
+    );
+    _circleFills[id] = fill;
+  }
+
+  void _disposeCircleFill(int id) {
+    final fill = _circleFills.remove(id);
+    if (fill != null) _native.removeFill(fill);
+  }
+
   // --- Popups -------------------------------------------------------------
 
   /// Shows [child] anchored at [position] and returns its [PopupId].
@@ -248,6 +371,8 @@ class GoodMapController extends ChangeNotifier {
     _markers.dispose();
     _popups.dispose();
     _polylines.dispose();
+    _polygons.dispose();
+    _circles.dispose();
     super.dispose();
   }
 }

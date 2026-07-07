@@ -11,7 +11,11 @@ export 'src/good_map_controller.dart'
         PopupId,
         PopupOptions,
         PolylineId,
-        PolylineOptions;
+        PolylineOptions,
+        PolygonId,
+        PolygonOptions,
+        CircleId,
+        CircleOptions;
 export 'src/globe/globe_overlays.dart' show GlobeArc;
 export 'src/globe/good_globe.dart' show GoodGlobe;
 export 'src/globe/good_map_globe.dart' show GoodMapGlobe;

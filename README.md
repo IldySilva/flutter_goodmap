@@ -97,6 +97,8 @@ GoodMap(
 - **Markers:** `addMarker`, `updateMarker`, `removeMarker`, `clearMarkers`
 - **Popups:** `showPopup`, `hidePopup`, `clearPopups`
 - **Polylines:** `addPolyline`, `removePolyline`, `clearPolylines`
+- **Polygons:** `addPolygon`, `removePolygon`, `clearPolygons`
+- **Circles:** `addCircle`, `removeCircle`, `clearCircles`
 
 Both surfaces follow `Theme.of(context).brightness` (CARTO positron / dark-matter).
 

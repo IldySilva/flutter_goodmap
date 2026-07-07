@@ -34,6 +34,8 @@ class _FallbackSymbol extends Fake implements Symbol {}
 
 class _FallbackLine extends Fake implements Line {}
 
+class _FallbackFill extends Fake implements Fill {}
+
 /// Call once in setUpAll before stubbing methods that take these types.
 void registerGoodFallbacks() {
   registerFallbackValue(CameraUpdate.zoomIn());
@@ -43,4 +45,6 @@ void registerGoodFallbacks() {
   registerFallbackValue(Uint8List(0)); // for addImage(bytes) stubs
   registerFallbackValue(const LineOptions()); // for addLine(options) stubs
   registerFallbackValue(_FallbackLine()); // for removeLine(line) stubs
+  registerFallbackValue(const FillOptions()); // for addFill(options) stubs
+  registerFallbackValue(_FallbackFill()); // for removeFill(fill) stubs
 }
