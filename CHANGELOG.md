@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+
+Web Support.
+
+### Flutter Web
+- **Web Support**: The `goodmap` package now fully supports Flutter Web! Both the native MapLibre flat map and the 3D `ui.FragmentProgram` globe have been updated to run efficiently in the browser.
+- **Cross-platform Tile Fetching**: Replaced `dart:io` `HttpClient` with `package:http` in the globe's tile fetching logic, enabling it to compile and run on the web.
 ## 0.4.0
 
 Data visualization & richness.

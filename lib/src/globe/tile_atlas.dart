@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 
 import 'mercator.dart';
@@ -29,7 +29,7 @@ class TileAtlas {
   final int height;
 
   static const int _tileSize = 256;
-  final HttpClient _client = HttpClient();
+  final http.Client _client = http.Client();
   bool _disposed = false;
 
   /// Fetches tiles, reprojects, and returns the equirectangular atlas image.
@@ -75,10 +75,9 @@ class TileAtlas {
     try {
       final url =
           'https://basemaps.cartocdn.com/${_styleName()}/${tile.z}/${tile.x}/${tile.y}.png';
-      final request = await _client.getUrl(Uri.parse(url));
-      final response = await request.close();
+      final response = await _client.get(Uri.parse(url));
       if (response.statusCode != 200) return null;
-      final bytes = await consolidateHttpClientResponseBytes(response);
+      final bytes = response.bodyBytes;
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
       final data =
@@ -108,7 +107,7 @@ class TileAtlas {
 
   void dispose() {
     _disposed = true;
-    _client.close(force: true);
+    _client.close();
   }
 }
 

@@ -26,6 +26,15 @@ import 'package:goodmap/goodmap.dart';
 The flat map uses `maplibre_gl`, which requires **iOS 13+** and Android
 **`minSdkVersion 21`**.
 
+### Web Support
+
+`goodmap` supports Flutter Web! To enable it, you must add the MapLibre GL JS library to your `web/index.html` file inside the `<head>` tag:
+
+```html
+<script src="https://unpkg.com/maplibre-gl@5.23.0/dist/maplibre-gl.js"></script>
+<link href="https://unpkg.com/maplibre-gl@5.23.0/dist/maplibre-gl.css" rel="stylesheet" />
+```
+
 ## Globe (`GoodGlobe`)
 
 <img src="screenshots/picglobe.png" alt="GoodGlobe with arcs" width="280">
